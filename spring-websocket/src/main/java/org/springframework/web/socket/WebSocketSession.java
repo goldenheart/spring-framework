@@ -44,6 +44,7 @@ public interface WebSocketSession extends Closeable {
 	/**
 	 * Return the URI used to open the WebSocket connection.
 	 */
+	@Nullable
 	URI getUri();
 
 	/**
@@ -79,6 +80,7 @@ public interface WebSocketSession extends Closeable {
 	/**
 	 * Return the address of the remote client.
 	 */
+	@Nullable
 	InetSocketAddress getRemoteAddress();
 
 	/**

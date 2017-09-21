@@ -72,10 +72,13 @@ public class CciTemplate implements CciOperations {
 
 	private final Log logger = LogFactory.getLog(getClass());
 
+	@Nullable
 	private ConnectionFactory connectionFactory;
 
+	@Nullable
 	private ConnectionSpec connectionSpec;
 
+	@Nullable
 	private RecordCreator outputRecordCreator;
 
 
@@ -106,7 +109,9 @@ public class CciTemplate implements CciOperations {
 	 */
 	public CciTemplate(ConnectionFactory connectionFactory, @Nullable ConnectionSpec connectionSpec) {
 		setConnectionFactory(connectionFactory);
-		setConnectionSpec(connectionSpec);
+		if (connectionSpec != null) {
+			setConnectionSpec(connectionSpec);
+		}
 		afterPropertiesSet();
 	}
 
@@ -189,15 +194,17 @@ public class CciTemplate implements CciOperations {
 	 * @see #setConnectionSpec
 	 */
 	public CciTemplate getDerivedTemplate(ConnectionSpec connectionSpec) {
-		CciTemplate derived = new CciTemplate();
-		derived.setConnectionFactory(getConnectionFactory());
-		derived.setConnectionSpec(connectionSpec);
-		derived.setOutputRecordCreator(getOutputRecordCreator());
+		CciTemplate derived = new CciTemplate(obtainConnectionFactory(), connectionSpec);
+		RecordCreator recordCreator = getOutputRecordCreator();
+		if (recordCreator != null) {
+			derived.setOutputRecordCreator(recordCreator);
+		}
 		return derived;
 	}
 
 
 	@Override
+	@Nullable
 	public <T> T execute(ConnectionCallback<T> action) throws DataAccessException {
 		Assert.notNull(action, "Callback object must not be null");
 		ConnectionFactory connectionFactory = obtainConnectionFactory();
@@ -220,6 +227,7 @@ public class CciTemplate implements CciOperations {
 	}
 
 	@Override
+	@Nullable
 	public <T> T execute(final InteractionCallback<T> action) throws DataAccessException {
 		Assert.notNull(action, "Callback object must not be null");
 		return execute((ConnectionCallback<T>) (connection, connectionFactory) -> {
@@ -234,6 +242,7 @@ public class CciTemplate implements CciOperations {
 	}
 
 	@Override
+	@Nullable
 	public Record execute(InteractionSpec spec, Record inputRecord) throws DataAccessException {
 		return doExecute(spec, inputRecord, null, new SimpleRecordExtractor());
 	}

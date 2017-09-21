@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -353,6 +354,19 @@ public interface ServerResponse {
 		<T, P extends Publisher<T>> Mono<ServerResponse> body(P publisher, Class<T> elementClass);
 
 		/**
+		 * Set the body of the response to the given asynchronous {@code Publisher} and return it.
+		 * This convenience method combines {@link #body(BodyInserter)} and
+		 * {@link BodyInserters#fromPublisher(Publisher, Class)}.
+		 * @param publisher the {@code Publisher} to write to the response
+		 * @param typeReference a type reference describing the elements contained in the publisher
+		 * @param <T> the type of the elements contained in the publisher
+		 * @param <P> the type of the {@code Publisher}
+		 * @return the built response
+		 */
+		<T, P extends Publisher<T>> Mono<ServerResponse> body(P publisher,
+				ParameterizedTypeReference<T> typeReference);
+
+		/**
 		 * Set the body of the response to the given synchronous {@code Object} and return it.
 		 * This convenience method combines {@link #body(BodyInserter)} and
 		 * {@link BodyInserters#fromObject(Object)}.
@@ -392,6 +406,7 @@ public interface ServerResponse {
 		Mono<ServerResponse> render(String name, Map<String, ?> model);
 	}
 
+
 	/**
 	 * Defines the context used during the {@link #writeTo(ServerWebExchange, Context)}.
 	 */
@@ -399,13 +414,13 @@ public interface ServerResponse {
 
 		/**
 		 * Return the {@link HttpMessageWriter}s to be used for response body conversion.
-		 * @return the stream of message writers
+		 * @return the list of message writers
 		 */
 		List<HttpMessageWriter<?>> messageWriters();
 
 		/**
 		 * Return the  {@link ViewResolver}s to be used for view name resolution.
-		 * @return the stream of view resolvers
+		 * @return the list of view resolvers
 		 */
 		List<ViewResolver> viewResolvers();
 	}

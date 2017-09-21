@@ -96,11 +96,13 @@ public abstract class AbstractMessageWriterResultHandler extends HandlerResultHa
 		ResolvableType elementType;
 		if (adapter != null) {
 			publisher = adapter.toPublisher(body);
-			elementType = adapter.isNoValue() ? ResolvableType.forClass(Void.class) : bodyType.getGeneric(0);
+			ResolvableType genericType = bodyType.getGeneric(0);
+			elementType = getElementType(adapter, genericType);
 		}
 		else {
 			publisher = Mono.justOrEmpty(body);
-			elementType = (bodyClass == null && body != null ? ResolvableType.forInstance(body) : bodyType);
+			elementType = ((bodyClass == null || bodyClass.equals(Object.class)) && body != null ?
+					ResolvableType.forInstance(body) : bodyType);
 		}
 
 		if (void.class == elementType.getRawClass() || Void.class == elementType.getRawClass()) {
@@ -125,6 +127,18 @@ public abstract class AbstractMessageWriterResultHandler extends HandlerResultHa
 		}
 
 		return Mono.error(new NotAcceptableStatusException(getProducibleMediaTypes(elementType)));
+	}
+
+	private ResolvableType getElementType(ReactiveAdapter adapter, ResolvableType genericType) {
+		if (adapter.isNoValue()) {
+			return ResolvableType.forClass(Void.class);
+		}
+		else if (genericType != ResolvableType.NONE) {
+			return genericType;
+		}
+		else {
+			return ResolvableType.forClass(Object.class);
+		}
 	}
 
 	private List<MediaType> getProducibleMediaTypes(ResolvableType elementType) {

@@ -16,9 +16,6 @@
 
 package org.springframework.expression.spel.standard;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Map;
@@ -90,14 +87,13 @@ public class SpelCompiler implements Opcodes {
 
 
 	/**
-	 * Attempt compilation of the supplied expression. A check is
-	 * made to see if it is compilable before compilation proceeds. The
-	 * check involves visiting all the nodes in the expression Ast and
-	 * ensuring enough state is known about them that bytecode can
-	 * be generated for them.
+	 * Attempt compilation of the supplied expression. A check is made to see
+	 * if it is compilable before compilation proceeds. The check involves
+	 * visiting all the nodes in the expression Ast and ensuring enough state
+	 * is known about them that bytecode can be generated for them.
 	 * @param expression the expression to compile
-	 * @return an instance of the class implementing the compiled expression, or null
-	 * if compilation is not possible
+	 * @return an instance of the class implementing the compiled expression,
+	 * or {@code null} if compilation is not possible
 	 */
 	@Nullable
 	public CompiledExpression compile(SpelNodeImpl expression) {
@@ -193,7 +189,6 @@ public class SpelCompiler implements Opcodes {
 	 * because they anchor compiled classes in memory and prevent GC.  If you have expressions
 	 * continually recompiling over time then by replacing the classloader periodically
 	 * at least some of the older variants can be garbage collected.
-	 * 
 	 * @param name name of the class
 	 * @param bytes bytecode for the class
 	 * @return the Class object for the compiled expression
@@ -243,40 +238,6 @@ public class SpelCompiler implements Opcodes {
 	public static void revertToInterpreted(Expression expression) {
 		if (expression instanceof SpelExpression) {
 			((SpelExpression) expression).revertToInterpreted();
-		}
-	}
-
-	/**
-	 * For debugging purposes, dump the specified byte code into a file on the disk.
-	 * Not yet hooked in, needs conditionally calling based on a sys prop.
-	 * @param expressionText the text of the expression compiled
-	 * @param name the name of the class being used for the compiled expression
-	 * @param bytecode the bytecode for the generated class
-	 */
-	@SuppressWarnings("unused")
-	private static void dump(String expressionText, String name, byte[] bytecode) {
-		String nameToUse = name.replace('.', '/');
-		String dir = (nameToUse.indexOf('/') != -1 ? nameToUse.substring(0, nameToUse.lastIndexOf('/')) : "");
-		String dumpLocation = null;
-		try {
-			File tempFile = File.createTempFile("tmp", null);
-			dumpLocation = tempFile + File.separator + nameToUse + ".class";
-			tempFile.delete();
-			File f = new File(tempFile, dir);
-			f.mkdirs();
-			// System.out.println("Expression '" + expressionText + "' compiled code dumped to " + dumpLocation);
-			if (logger.isDebugEnabled()) {
-				logger.debug("Expression '" + expressionText + "' compiled code dumped to " + dumpLocation);
-			}
-			f = new File(dumpLocation);
-			FileOutputStream fos = new FileOutputStream(f);
-			fos.write(bytecode);
-			fos.flush();
-			fos.close();
-		}
-		catch (IOException ex) {
-			throw new IllegalStateException(
-					"Unexpected problem dumping class '" + nameToUse + "' into " + dumpLocation, ex);
 		}
 	}
 

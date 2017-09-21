@@ -41,6 +41,7 @@ public class MutablePropertyValues implements PropertyValues, Serializable {
 
 	private final List<PropertyValue> propertyValueList;
 
+	@Nullable
 	private Set<String> processedProperties;
 
 	private volatile boolean converted = false;
@@ -249,6 +250,7 @@ public class MutablePropertyValues implements PropertyValues, Serializable {
 	}
 
 	@Override
+	@Nullable
 	public PropertyValue getPropertyValue(String propertyName) {
 		for (PropertyValue pv : this.propertyValueList) {
 			if (pv.getName().equals(propertyName)) {

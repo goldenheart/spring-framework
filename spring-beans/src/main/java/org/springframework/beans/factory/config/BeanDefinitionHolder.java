@@ -43,6 +43,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 
 	private final String beanName;
 
+	@Nullable
 	private final String[] aliases;
 
 
@@ -112,6 +113,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * @see BeanDefinition#getSource()
 	 */
 	@Override
+	@Nullable
 	public Object getSource() {
 		return this.beanDefinition.getSource();
 	}

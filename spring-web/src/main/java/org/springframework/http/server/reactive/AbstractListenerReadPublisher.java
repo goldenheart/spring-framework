@@ -56,6 +56,7 @@ public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
 	private static final AtomicLongFieldUpdater<AbstractListenerReadPublisher> DEMAND_FIELD_UPDATER =
 			AtomicLongFieldUpdater.newUpdater(AbstractListenerReadPublisher.class, "demand");
 
+	@Nullable
 	private Subscriber<? super T> subscriber;
 
 
@@ -126,6 +127,7 @@ public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
 				if (r != Long.MAX_VALUE) {
 					DEMAND_FIELD_UPDATER.addAndGet(this, -1L);
 				}
+				Assert.state(this.subscriber != null, "No subscriber");
 				this.subscriber.onNext(data);
 			}
 			else {
@@ -143,7 +145,6 @@ public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
 	private static final class ReadSubscription implements Subscription {
 
 		private final AbstractListenerReadPublisher<?> publisher;
-
 
 		public ReadSubscription(AbstractListenerReadPublisher<?> publisher) {
 			this.publisher = publisher;
@@ -221,7 +222,7 @@ public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
 		NO_DEMAND {
 			@Override
 			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
-				if (Operators.checkRequest(n, publisher.subscriber)) {
+				if (Operators.validate(n)) {
 					Operators.addAndGet(DEMAND_FIELD_UPDATER, publisher, n);
 					if (publisher.changeState(this, DEMAND)) {
 						publisher.checkOnDataAvailable();
@@ -239,7 +240,7 @@ public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
 		DEMAND {
 			@Override
 			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
-				if (Operators.checkRequest(n, publisher.subscriber)) {
+				if (Operators.validate(n)) {
 					Operators.addAndGet(DEMAND_FIELD_UPDATER, publisher, n);
 				}
 			}
@@ -267,7 +268,7 @@ public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
 		READING {
 			@Override
 			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
-				if (Operators.checkRequest(n, publisher.subscriber)) {
+				if (Operators.validate(n)) {
 					Operators.addAndGet(DEMAND_FIELD_UPDATER, publisher, n);
 				}
 			}

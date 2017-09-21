@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.http.codec.json;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -31,10 +33,12 @@ import org.springframework.core.codec.DecodingException;
 import org.springframework.core.io.buffer.AbstractDataBufferAllocatingTestCase;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.codec.Pojo;
+import org.springframework.util.MimeType;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -62,6 +66,22 @@ public class Jackson2JsonDecoderTests extends AbstractDataBufferAllocatingTestCa
 
 		assertFalse(decoder.canDecode(forClass(String.class), null));
 		assertFalse(decoder.canDecode(forClass(Pojo.class), APPLICATION_XML));
+	}
+
+	@Test // SPR-15866
+	public void canDecodeWithProvidedMimeType() {
+		MimeType textJavascript = new MimeType("text", "javascript", StandardCharsets.UTF_8);
+		Jackson2JsonDecoder decoder = new Jackson2JsonDecoder(new ObjectMapper(), textJavascript);
+
+		assertEquals(Collections.singletonList(textJavascript), decoder.getDecodableMimeTypes());
+	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void decodableMimeTypesIsImmutable() {
+		MimeType textJavascript = new MimeType("text", "javascript", StandardCharsets.UTF_8);
+		Jackson2JsonDecoder decoder = new Jackson2JsonDecoder(new ObjectMapper(), textJavascript);
+
+		decoder.getMimeTypes().add(new MimeType("text", "ecmascript"));
 	}
 
 	@Test
@@ -117,6 +137,17 @@ public class Jackson2JsonDecoderTests extends AbstractDataBufferAllocatingTestCa
 	}
 
 	@Test
+	public void decodeEmptyArrayToFlux() throws Exception {
+		Flux<DataBuffer> source = Flux.just(stringBuffer("[]"));
+		ResolvableType elementType = forClass(Pojo.class);
+		Flux<Object> flux = new Jackson2JsonDecoder().decode(source, elementType, null, emptyMap());
+
+		StepVerifier.create(flux)
+				.expectNextCount(0)
+				.verifyComplete();
+	}
+
+	@Test
 	public void fieldLevelJsonView() throws Exception {
 		Flux<DataBuffer> source = Flux.just(
 				stringBuffer("{\"withView1\" : \"with\", \"withView2\" : \"with\", \"withoutView\" : \"without\"}"));
@@ -156,8 +187,7 @@ public class Jackson2JsonDecoderTests extends AbstractDataBufferAllocatingTestCa
 	public void decodeEmptyBodyToMono() throws Exception {
 		Flux<DataBuffer> source = Flux.empty();
 		ResolvableType elementType = forClass(Pojo.class);
-		Mono<Object> mono = new Jackson2JsonDecoder().decodeToMono(source, elementType,
-				null, emptyMap());
+		Mono<Object> mono = new Jackson2JsonDecoder().decodeToMono(source, elementType, null, emptyMap());
 
 		StepVerifier.create(mono)
 				.expectNextCount(0)

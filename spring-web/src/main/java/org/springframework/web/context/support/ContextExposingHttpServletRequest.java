@@ -37,8 +37,10 @@ public class ContextExposingHttpServletRequest extends HttpServletRequestWrapper
 
 	private final WebApplicationContext webApplicationContext;
 
+	@Nullable
 	private final Set<String> exposedContextBeanNames;
 
+	@Nullable
 	private Set<String> explicitAttributes;
 
 
@@ -78,6 +80,7 @@ public class ContextExposingHttpServletRequest extends HttpServletRequestWrapper
 
 
 	@Override
+	@Nullable
 	public Object getAttribute(String name) {
 		if ((this.explicitAttributes == null || !this.explicitAttributes.contains(name)) &&
 				(this.exposedContextBeanNames == null || this.exposedContextBeanNames.contains(name)) &&

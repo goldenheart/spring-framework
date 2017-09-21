@@ -60,6 +60,7 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 
 	private JmsActivationSpecFactory activationSpecFactory = new DefaultJmsActivationSpecFactory();
 
+	@Nullable
 	private JmsActivationSpecConfig activationSpecConfig;
 
 
@@ -137,7 +138,7 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	 * <p>This config object will be turned into a concrete JCA 1.5 ActivationSpec
 	 * object through a {@link #setActivationSpecFactory JmsActivationSpecFactory}.
 	 */
-	public void setActivationSpecConfig(JmsActivationSpecConfig activationSpecConfig) {
+	public void setActivationSpecConfig(@Nullable JmsActivationSpecConfig activationSpecConfig) {
 		this.activationSpecConfig = activationSpecConfig;
 	}
 
@@ -190,6 +191,7 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	}
 
 	@Override
+	@Nullable
 	public MessageConverter getMessageConverter() {
 		JmsActivationSpecConfig config = getActivationSpecConfig();
 		if (config != null) {
@@ -199,6 +201,7 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	}
 
 	@Override
+	@Nullable
 	public DestinationResolver getDestinationResolver() {
 		if (this.activationSpecFactory instanceof StandardJmsActivationSpecFactory) {
 			return ((StandardJmsActivationSpecFactory) this.activationSpecFactory).getDestinationResolver();
@@ -225,6 +228,7 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	}
 
 	@Override
+	@Nullable
 	public QosSettings getReplyQosSettings() {
 		JmsActivationSpecConfig config = getActivationSpecConfig();
 		if (config != null) {

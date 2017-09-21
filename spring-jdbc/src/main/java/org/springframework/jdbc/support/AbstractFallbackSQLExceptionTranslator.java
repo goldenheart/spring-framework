@@ -38,6 +38,7 @@ public abstract class AbstractFallbackSQLExceptionTranslator implements SQLExcep
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	@Nullable
 	private SQLExceptionTranslator fallbackTranslator;
 
 
@@ -45,7 +46,7 @@ public abstract class AbstractFallbackSQLExceptionTranslator implements SQLExcep
 	 * Override the default SQL state fallback translator
 	 * (typically a {@link SQLStateSQLExceptionTranslator}).
 	 */
-	public void setFallbackTranslator(SQLExceptionTranslator fallback) {
+	public void setFallbackTranslator(@Nullable SQLExceptionTranslator fallback) {
 		this.fallbackTranslator = fallback;
 	}
 
@@ -63,6 +64,7 @@ public abstract class AbstractFallbackSQLExceptionTranslator implements SQLExcep
 	 * {@link #getFallbackTranslator() fallback translator} if necessary.
 	 */
 	@Override
+	@Nullable
 	public DataAccessException translate(@Nullable String task, @Nullable String sql, SQLException ex) {
 		Assert.notNull(ex, "Cannot translate a null SQLException");
 		if (task == null) {

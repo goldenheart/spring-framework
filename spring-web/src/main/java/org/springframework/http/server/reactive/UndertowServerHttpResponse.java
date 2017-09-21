@@ -17,10 +17,10 @@
 package org.springframework.http.server.reactive;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +40,7 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ZeroCopyHttpOutputMessage;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -55,6 +56,7 @@ public class UndertowServerHttpResponse extends AbstractListenerServerHttpRespon
 
 	private final HttpServerExchange exchange;
 
+	@Nullable
 	private StreamSinkChannel responseChannel;
 
 
@@ -83,7 +85,7 @@ public class UndertowServerHttpResponse extends AbstractListenerServerHttpRespon
 		return doCommit(() -> {
 			FileChannel source = null;
 			try {
-				source = new FileInputStream(file).getChannel();
+				source = FileChannel.open(file.toPath(), StandardOpenOption.READ);
 				StreamSinkChannel destination = getUndertowExchange().getResponseChannel();
 				Channels.transferBlocking(destination, source, position, count);
 				return Mono.empty();
@@ -145,11 +147,24 @@ public class UndertowServerHttpResponse extends AbstractListenerServerHttpRespon
 		return new ResponseBodyProcessor(this.responseChannel);
 	}
 
+	private boolean isWritePossible() {
+		if (this.responseChannel == null) {
+			this.responseChannel = this.exchange.getResponseChannel();
+		}
+		if (this.responseChannel.isWriteResumed()) {
+			return true;
+		} else {
+			this.responseChannel.resumeWrites();
+			return false;
+		}
+	}
 
-	private static class ResponseBodyProcessor extends AbstractListenerWriteProcessor<DataBuffer> {
+
+	private class ResponseBodyProcessor extends AbstractListenerWriteProcessor<DataBuffer> {
 
 		private final StreamSinkChannel channel;
 
+		@Nullable
 		private volatile ByteBuffer byteBuffer;
 
 		public ResponseBodyProcessor(StreamSinkChannel channel) {
@@ -161,24 +176,20 @@ public class UndertowServerHttpResponse extends AbstractListenerServerHttpRespon
 
 		@Override
 		protected boolean isWritePossible() {
-			if (this.channel.isWriteResumed()) {
-				return true;
-			} else {
-				this.channel.resumeWrites();
-				return false;
-			}
+			return UndertowServerHttpResponse.this.isWritePossible();
 		}
 
 		@Override
 		protected boolean write(DataBuffer dataBuffer) throws IOException {
-			if (this.byteBuffer == null) {
+			ByteBuffer buffer = this.byteBuffer;
+			if (buffer == null) {
 				return false;
 			}
 			if (logger.isTraceEnabled()) {
 				logger.trace("write: " + dataBuffer);
 			}
-			int total = this.byteBuffer.remaining();
-			int written = writeByteBuffer(this.byteBuffer);
+			int total = buffer.remaining();
+			int written = writeByteBuffer(buffer);
 
 			if (logger.isTraceEnabled()) {
 				logger.trace("written: " + written + " total: " + total);
@@ -259,6 +270,16 @@ public class UndertowServerHttpResponse extends AbstractListenerServerHttpRespon
 		protected void flushingFailed(Throwable t) {
 			cancel();
 			onError(t);
+		}
+
+		@Override
+		protected boolean isWritePossible() {
+			return UndertowServerHttpResponse.this.isWritePossible();
+		}
+
+		@Override
+		protected boolean isFlushPending() {
+			return false;
 		}
 	}
 

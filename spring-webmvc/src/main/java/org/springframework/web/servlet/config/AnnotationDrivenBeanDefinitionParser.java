@@ -44,6 +44,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
+import org.springframework.http.converter.ResourceRegionHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.cbor.MappingJackson2CborHttpMessageConverter;
 import org.springframework.http.converter.feed.AtomFeedHttpMessageConverter;
@@ -188,6 +189,7 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 
 
 	@Override
+	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		Object source = parserContext.extractSource(element);
 		XmlReaderContext readerContext = parserContext.getReaderContext();
@@ -578,6 +580,7 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 			messageConverters.add(stringConverterDef);
 
 			messageConverters.add(createConverterDefinition(ResourceHttpMessageConverter.class, source));
+			messageConverters.add(createConverterDefinition(ResourceRegionHttpMessageConverter.class, source));
 			messageConverters.add(createConverterDefinition(SourceHttpMessageConverter.class, source));
 			messageConverters.add(createConverterDefinition(AllEncompassingFormHttpMessageConverter.class, source));
 
@@ -681,10 +684,13 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 	static class CompositeUriComponentsContributorFactoryBean
 			implements FactoryBean<CompositeUriComponentsContributor>, InitializingBean {
 
+		@Nullable
 		private RequestMappingHandlerAdapter handlerAdapter;
 
+		@Nullable
 		private ConversionService conversionService;
 
+		@Nullable
 		private CompositeUriComponentsContributor uriComponentsContributor;
 
 		public void setHandlerAdapter(RequestMappingHandlerAdapter handlerAdapter) {
@@ -697,11 +703,13 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 
 		@Override
 		public void afterPropertiesSet() {
+			Assert.state(this.handlerAdapter != null, "No RequestMappingHandlerAdapter set");
 			this.uriComponentsContributor = new CompositeUriComponentsContributor(
 					this.handlerAdapter.getArgumentResolvers(), this.conversionService);
 		}
 
 		@Override
+		@Nullable
 		public CompositeUriComponentsContributor getObject() throws Exception {
 			return this.uriComponentsContributor;
 		}

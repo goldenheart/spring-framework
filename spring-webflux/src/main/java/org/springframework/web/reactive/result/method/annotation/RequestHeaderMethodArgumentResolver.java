@@ -18,7 +18,6 @@ package org.springframework.web.reactive.result.method.annotation;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.core.MethodParameter;
@@ -76,15 +75,13 @@ public class RequestHeaderMethodArgumentResolver extends AbstractNamedValueSyncA
 	}
 
 	@Override
-	protected Optional<Object> resolveNamedValue(String name, MethodParameter parameter,
-			ServerWebExchange exchange) {
-
+	protected Object resolveNamedValue(String name, MethodParameter parameter, ServerWebExchange exchange) {
 		List<String> headerValues = exchange.getRequest().getHeaders().get(name);
 		Object result = null;
 		if (headerValues != null) {
 			result = (headerValues.size() == 1 ? headerValues.get(0) : headerValues);
 		}
-		return Optional.ofNullable(result);
+		return result;
 	}
 
 	@Override

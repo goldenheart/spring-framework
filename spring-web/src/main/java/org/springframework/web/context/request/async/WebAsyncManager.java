@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import javax.servlet.http.HttpServletRequest;
 
@@ -67,8 +68,14 @@ public final class WebAsyncManager {
 	private static final CallableProcessingInterceptor timeoutCallableInterceptor =
 			new TimeoutCallableProcessingInterceptor();
 
+	private static final CallableProcessingInterceptor errorCallableInterceptor =
+			new ErrorCallableProcessingInterceptor();
+
 	private static final DeferredResultProcessingInterceptor timeoutDeferredResultInterceptor =
 			new TimeoutDeferredResultProcessingInterceptor();
+
+	private static final DeferredResultProcessingInterceptor errorDeferredResultInterceptor =
+			new ErrorDeferredResultProcessingInterceptor();
 
 
 	private AsyncWebRequest asyncWebRequest;
@@ -281,6 +288,7 @@ public final class WebAsyncManager {
 		interceptors.add(webAsyncTask.getInterceptor());
 		interceptors.addAll(this.callableInterceptors.values());
 		interceptors.add(timeoutCallableInterceptor);
+		interceptors.add(errorCallableInterceptor);
 
 		final Callable<?> callable = webAsyncTask.getCallable();
 		final CallableInterceptorChain interceptorChain = new CallableInterceptorChain(interceptors);
@@ -293,13 +301,21 @@ public final class WebAsyncManager {
 			}
 		});
 
+		this.asyncWebRequest.addErrorHandler(t -> {
+			logger.debug("Processing error");
+			Object result = interceptorChain.triggerAfterError(this.asyncWebRequest, callable, t);
+			if (result != CallableProcessingInterceptor.RESULT_NONE) {
+				setConcurrentResultAndDispatch(result);
+			}
+		});
+
 		this.asyncWebRequest.addCompletionHandler(() ->
 				interceptorChain.triggerAfterCompletion(this.asyncWebRequest, callable));
 
 		interceptorChain.applyBeforeConcurrentHandling(this.asyncWebRequest, callable);
 		startAsyncProcessing(processingContext);
 		try {
-			this.taskExecutor.submit(() -> {
+			Future<?> future = this.taskExecutor.submit(() -> {
 				Object result = null;
 				try {
 					interceptorChain.applyPreProcess(this.asyncWebRequest, callable);
@@ -313,6 +329,7 @@ public final class WebAsyncManager {
 				}
 				setConcurrentResultAndDispatch(result);
 			});
+			interceptorChain.setTaskFuture(future);
 		}
 		catch (RejectedExecutionException ex) {
 			Object result = interceptorChain.applyPostProcess(this.asyncWebRequest, callable, ex);
@@ -371,12 +388,22 @@ public final class WebAsyncManager {
 		interceptors.add(deferredResult.getInterceptor());
 		interceptors.addAll(this.deferredResultInterceptors.values());
 		interceptors.add(timeoutDeferredResultInterceptor);
+		interceptors.add(errorDeferredResultInterceptor);
 
 		final DeferredResultInterceptorChain interceptorChain = new DeferredResultInterceptorChain(interceptors);
 
 		this.asyncWebRequest.addTimeoutHandler(() -> {
 			try {
 				interceptorChain.triggerAfterTimeout(this.asyncWebRequest, deferredResult);
+			}
+			catch (Throwable ex) {
+				setConcurrentResultAndDispatch(ex);
+			}
+		});
+
+		this.asyncWebRequest.addErrorHandler(t -> {
+			try {
+				interceptorChain.triggerAfterError(this.asyncWebRequest, deferredResult, t);
 			}
 			catch (Throwable ex) {
 				setConcurrentResultAndDispatch(ex);

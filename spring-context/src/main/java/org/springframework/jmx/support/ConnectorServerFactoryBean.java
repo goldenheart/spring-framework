@@ -64,14 +64,17 @@ public class ConnectorServerFactoryBean extends MBeanRegistrationSupport
 
 	private Map<String, Object> environment = new HashMap<>();
 
+	@Nullable
 	private MBeanServerForwarder forwarder;
 
+	@Nullable
 	private ObjectName objectName;
 
 	private boolean threaded = false;
 
 	private boolean daemon = false;
 
+	@Nullable
 	private JMXConnectorServer connectorServer;
 
 
@@ -202,6 +205,7 @@ public class ConnectorServerFactoryBean extends MBeanRegistrationSupport
 
 
 	@Override
+	@Nullable
 	public JMXConnectorServer getObject() {
 		return this.connectorServer;
 	}
@@ -224,11 +228,13 @@ public class ConnectorServerFactoryBean extends MBeanRegistrationSupport
 	 */
 	@Override
 	public void destroy() throws IOException {
-		if (logger.isInfoEnabled()) {
-			logger.info("Stopping JMX connector server: " + this.connectorServer);
-		}
 		try {
-			this.connectorServer.stop();
+			if (this.connectorServer != null) {
+				if (logger.isInfoEnabled()) {
+					logger.info("Stopping JMX connector server: " + this.connectorServer);
+				}
+				this.connectorServer.stop();
+			}
 		}
 		finally {
 			unregisterBeans();

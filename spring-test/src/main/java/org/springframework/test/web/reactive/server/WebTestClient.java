@@ -31,6 +31,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ClientHttpRequest;
 import org.springframework.http.codec.ServerCodecConfigurer;
@@ -43,7 +44,6 @@ import org.springframework.web.reactive.config.ViewResolverRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
-import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.HandlerStrategies;
@@ -51,6 +51,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.result.method.annotation.ArgumentResolverConfigurer;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebHandler;
+import org.springframework.web.server.session.WebSessionManager;
 import org.springframework.web.util.UriBuilder;
 import org.springframework.web.util.UriBuilderFactory;
 
@@ -89,52 +90,66 @@ public interface WebTestClient {
 	 * Prepare an HTTP GET request.
 	 * @return a spec for specifying the target URL
 	 */
-	UriSpec<RequestHeadersSpec<?>> get();
+	RequestHeadersUriSpec<?> get();
 
 	/**
 	 * Prepare an HTTP HEAD request.
 	 * @return a spec for specifying the target URL
 	 */
-	UriSpec<RequestHeadersSpec<?>> head();
+	RequestHeadersUriSpec<?> head();
 
 	/**
 	 * Prepare an HTTP POST request.
 	 * @return a spec for specifying the target URL
 	 */
-	UriSpec<RequestBodySpec> post();
+	RequestBodyUriSpec post();
 
 	/**
 	 * Prepare an HTTP PUT request.
 	 * @return a spec for specifying the target URL
 	 */
-	UriSpec<RequestBodySpec> put();
+	RequestBodyUriSpec put();
 
 	/**
 	 * Prepare an HTTP PATCH request.
 	 * @return a spec for specifying the target URL
 	 */
-	UriSpec<RequestBodySpec> patch();
+	RequestBodyUriSpec patch();
 
 	/**
 	 * Prepare an HTTP DELETE request.
 	 * @return a spec for specifying the target URL
 	 */
-	UriSpec<RequestHeadersSpec<?>> delete();
+	RequestHeadersUriSpec<?> delete();
 
 	/**
 	 * Prepare an HTTP OPTIONS request.
 	 * @return a spec for specifying the target URL
 	 */
-	UriSpec<RequestHeadersSpec<?>> options();
+	RequestHeadersUriSpec<?> options();
+
+	/**
+	 * Prepare a request for the specified {@code HttpMethod}.
+	 * @return a spec for specifying the target URL
+	 */
+	RequestBodyUriSpec method(HttpMethod method);
 
 
 	/**
-	 * Filter the client with the given {@code ExchangeFilterFunction}.
-	 * @param filterFunction the filter to apply to this client
-	 * @return the filtered client
-	 * @see ExchangeFilterFunction#apply(ExchangeFunction)
+	 * Return a builder to mutate properties of this web test client.
 	 */
-	WebTestClient filter(ExchangeFilterFunction filterFunction);
+	Builder mutate();
+
+	/**
+	 * Mutate the {@link WebTestClient}, apply the given configurer, and build
+	 * a new instance. Essentially a shortcut for:
+	 * <pre>
+	 * mutate().apply(configurer).build();
+	 * </pre>
+	 * @param configurer the configurer to apply
+	 * @return the mutated test client
+	 */
+	WebTestClient mutateWith(WebTestClientConfigurer configurer);
 
 
 	// Static, factory methods
@@ -156,7 +171,7 @@ public interface WebTestClient {
 	 * detected from an {@link ApplicationContext} such as
 	 * {@code @EnableWebFlux} Java config and annotated controller Spring beans.
 	 * @param applicationContext the context
-	 * @return the {@link WebTestClient} builder
+	 * @return the {@code WebTestClient} builder
 	 * @see org.springframework.web.reactive.config.EnableWebFlux
 	 */
 	static MockServerSpec<?> bindToApplicationContext(ApplicationContext applicationContext) {
@@ -166,7 +181,7 @@ public interface WebTestClient {
 	/**
 	 * Integration testing without a server targeting WebFlux functional endpoints.
 	 * @param routerFunction the RouterFunction to test
-	 * @return the {@link WebTestClient} builder
+	 * @return the {@code WebTestClient} builder
 	 */
 	static RouterFunctionSpec bindToRouterFunction(RouterFunction<?> routerFunction) {
 		return new DefaultRouterFunctionSpec(routerFunction);
@@ -175,7 +190,7 @@ public interface WebTestClient {
 	/**
 	 * Integration testing with a "mock" server targeting the given WebHandler.
 	 * @param webHandler the handler to test
-	 * @return the {@link WebTestClient} builder
+	 * @return the {@code WebTestClient} builder
 	 */
 	static MockServerSpec<?> bindToWebHandler(WebHandler webHandler) {
 		return new DefaultMockServerSpec(webHandler);
@@ -183,7 +198,7 @@ public interface WebTestClient {
 
 	/**
 	 * Complete end-to-end integration tests with actual requests to a running server.
-	 * @return the {@link WebTestClient} builder
+	 * @return the {@code WebTestClient} builder
 	 */
 	static Builder bindToServer() {
 		return new DefaultWebTestClientBuilder();
@@ -196,17 +211,25 @@ public interface WebTestClient {
 	interface MockServerSpec<B extends MockServerSpec<B>> {
 
 		/**
-		 * Register one or more {@link WebFilter} instances to apply to the
-		 * mock server.
-		 *
-		 * <p>This could be used for example to apply {@code ServerWebExchange}
-		 * transformations such as setting the Principal (for all requests or a
-		 * subset) via {@link ExchangeMutatorWebFilter}.
-		 *
+		 * Register {@link WebFilter} instances to add to the mock server.
 		 * @param filter one or more filters
-		 * @see ExchangeMutatorWebFilter
 		 */
 		<T extends B> T webFilter(WebFilter... filter);
+
+		/**
+		 * Provide a session manager instance for the mock server.
+		 * <p>By default an instance of
+		 * {@link org.springframework.web.server.session.DefaultWebSessionManager
+		 * DefaultWebSessionManager} is used.
+		 * @param sessionManager the session manager to use
+		 */
+		<T extends B> T webSessionManager(WebSessionManager sessionManager);
+
+		/**
+		 * Shortcut for pre-packaged customizations to the mock server setup.
+		 * @param configurer the configurer to apply
+		 */
+		<T extends B> T apply(MockServerConfigurer configurer);
 
 		/**
 		 * Proceed to configure and build the test client.
@@ -322,11 +345,48 @@ public interface WebTestClient {
 		Builder defaultHeader(String headerName, String... headerValues);
 
 		/**
+		 * Manipulate the default headers with the given consumer. The
+		 * headers provided to the consumer are "live", so that the consumer can be used to
+		 * {@linkplain HttpHeaders#set(String, String) overwrite} existing header values,
+		 * {@linkplain HttpHeaders#remove(Object) remove} values, or use any of the other
+		 * {@link HttpHeaders} methods.
+		 * @param headersConsumer a function that consumes the {@code HttpHeaders}
+		 * @return this builder
+		 */
+		Builder defaultHeaders(Consumer<HttpHeaders> headersConsumer);
+
+		/**
 		 * Add the given header to all requests that haven't added it.
 		 * @param cookieName the cookie name
 		 * @param cookieValues the cookie values
 		 */
 		Builder defaultCookie(String cookieName, String... cookieValues);
+
+		/**
+		 * Manipulate the default cookies with the given consumer. The
+		 * map provided to the consumer is "live", so that the consumer can be used to
+		 * {@linkplain MultiValueMap#set(Object, Object) overwrite} existing header values,
+		 * {@linkplain MultiValueMap#remove(Object) remove} values, or use any of the other
+		 * {@link MultiValueMap} methods.
+		 * @param cookiesConsumer a function that consumes the cookies map
+		 * @return this builder
+		 */
+		Builder defaultCookies(Consumer<MultiValueMap<String, String>> cookiesConsumer);
+
+		/**
+		 * Add the given filter to the filter chain.
+		 * @param filter the filter to be added to the chain
+		 */
+		Builder filter(ExchangeFilterFunction filter);
+
+		/**
+		 * Manipulate the filters with the given consumer. The
+		 * list provided to the consumer is "live", so that the consumer can be used to remove
+		 * filters, change ordering, etc.
+		 * @param filtersConsumer a function that consumes the filter list
+		 * @return this builder
+		 */
+		Builder filters(Consumer<List<ExchangeFilterFunction>> filtersConsumer);
 
 		/**
 		 * Configure the {@link ExchangeStrategies} to use.
@@ -342,6 +402,11 @@ public interface WebTestClient {
 		 */
 		Builder responseTimeout(Duration timeout);
 
+		/**
+		 * Shortcut for pre-packaged customizations to WebTestClient builder.
+		 * @param configurer the configurer to apply
+		 */
+		Builder apply(WebTestClientConfigurer configurer);
 
 		/**
 		 * Build the {@link WebTestClient} instance.
@@ -417,12 +482,15 @@ public interface WebTestClient {
 		S cookie(String name, String value);
 
 		/**
-		 * Copy the given cookies into the entity's cookies map.
-		 *
-		 * @param cookies the existing cookies to copy from
-		 * @return the same instance
+		 * Manipulate this request's cookies with the given consumer. The
+		 * map provided to the consumer is "live", so that the consumer can be used to
+		 * {@linkplain MultiValueMap#set(Object, Object) overwrite} existing header values,
+		 * {@linkplain MultiValueMap#remove(Object) remove} values, or use any of the other
+		 * {@link MultiValueMap} methods.
+		 * @param cookiesConsumer a function that consumes the cookies map
+		 * @return this builder
 		 */
-		S cookies(MultiValueMap<String, String> cookies);
+		S cookies(Consumer<MultiValueMap<String, String>> cookiesConsumer);
 
 		/**
 		 * Set the value of the {@code If-Modified-Since} header.
@@ -449,11 +517,32 @@ public interface WebTestClient {
 		S header(String headerName, String... headerValues);
 
 		/**
-		 * Copy the given headers into the entity's headers map.
-		 * @param headers the existing headers to copy from
-		 * @return the same instance
+		 * Manipulate the request's headers with the given consumer. The
+		 * headers provided to the consumer are "live", so that the consumer can be used to
+		 * {@linkplain HttpHeaders#set(String, String) overwrite} existing header values,
+		 * {@linkplain HttpHeaders#remove(Object) remove} values, or use any of the other
+		 * {@link HttpHeaders} methods.
+		 * @param headersConsumer a function that consumes the {@code HttpHeaders}
+		 * @return this builder
 		 */
-		S headers(HttpHeaders headers);
+		S headers(Consumer<HttpHeaders> headersConsumer);
+
+		/**
+		 * Set the attribute with the given name to the given value.
+		 * @param name the name of the attribute to add
+		 * @param value the value of the attribute to add
+		 * @return this builder
+		 */
+		S attribute(String name, Object value);
+
+		/**
+		 * Manipulate the request attributes with the given consumer. The attributes provided to
+		 * the consumer are "live", so that the consumer can be used to inspect attributes,
+		 * remove attributes, or use any of the other map-provided methods.
+		 * @param attributesConsumer a function that consumes the attributes
+		 * @return this builder
+		 */
+		S attributes(Consumer<Map<String, Object>> attributesConsumer);
 
 		/**
 		 * Perform the exchange without a request body.
@@ -509,6 +598,14 @@ public interface WebTestClient {
 		RequestHeadersSpec<?> syncBody(Object body);
 
 	}
+
+	interface RequestHeadersUriSpec<S extends RequestHeadersSpec<S>>
+			extends UriSpec<S>, RequestHeadersSpec<S> {
+	}
+
+	interface RequestBodyUriSpec extends RequestBodySpec, RequestHeadersUriSpec<RequestBodySpec> {
+	}
+
 
 	/**
 	 * Spec for declaring expectations on the response.

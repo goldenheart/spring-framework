@@ -4,6 +4,7 @@
 :api-spring-framework: {doc-root}/spring-framework/docs/{spring-version}/javadoc-api/org/springframework
 :toc: left
 :toclevels: 2
+:docinfo1:
 
 This part of the reference documentation is concerned with data access and the
 interaction between the data access layer and the business or service layer.
@@ -1552,7 +1553,7 @@ is controlled through the `Ordered` interface. For full details on advice orderi
 ----
 
 [source,xml,indent=0]
-[subs="verbatim"]
+[subs="verbatim,quotes"]
 ----
 	<?xml version="1.0" encoding="UTF-8"?>
 	<beans xmlns="http://www.springframework.org/schema/beans"
@@ -1608,7 +1609,7 @@ The following example effects the same setup as above, but uses the purely XML
 declarative approach.
 
 [source,xml,indent=0]
-[subs="verbatim"]
+[subs="verbatim,quotes"]
 ----
 	<?xml version="1.0" encoding="UTF-8"?>
 	<beans xmlns="http://www.springframework.org/schema/beans"

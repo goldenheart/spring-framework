@@ -100,14 +100,19 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 
 	private final List<ResourceTransformer> resourceTransformers = new ArrayList<>(4);
 
+	@Nullable
 	private ResourceHttpMessageConverter resourceHttpMessageConverter;
 
+	@Nullable
 	private ResourceRegionHttpMessageConverter resourceRegionHttpMessageConverter;
 
+	@Nullable
 	private ContentNegotiationManager contentNegotiationManager;
 
+	@Nullable
 	private PathExtensionContentNegotiationStrategy contentNegotiationStrategy;
 
+	@Nullable
 	private CorsConfiguration corsConfiguration;
 
 
@@ -176,14 +181,15 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 	 * <p>By default a {@link ResourceHttpMessageConverter} will be configured.
 	 * @since 4.3
 	 */
-	public void setResourceHttpMessageConverter(ResourceHttpMessageConverter resourceHttpMessageConverter) {
-		this.resourceHttpMessageConverter = resourceHttpMessageConverter;
+	public void setResourceHttpMessageConverter(@Nullable ResourceHttpMessageConverter messageConverter) {
+		this.resourceHttpMessageConverter = messageConverter;
 	}
 
 	/**
 	 * Return the configured resource converter.
 	 * @since 4.3
 	 */
+	@Nullable
 	public ResourceHttpMessageConverter getResourceHttpMessageConverter() {
 		return this.resourceHttpMessageConverter;
 	}
@@ -193,14 +199,15 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 	 * <p>By default a {@link ResourceRegionHttpMessageConverter} will be configured.
 	 * @since 4.3
 	 */
-	public void setResourceRegionHttpMessageConverter(ResourceRegionHttpMessageConverter resourceRegionHttpMessageConverter) {
-		this.resourceRegionHttpMessageConverter = resourceRegionHttpMessageConverter;
+	public void setResourceRegionHttpMessageConverter(@Nullable ResourceRegionHttpMessageConverter messageConverter) {
+		this.resourceRegionHttpMessageConverter = messageConverter;
 	}
 
 	/**
 	 * Return the configured resource region converter.
 	 * @since 4.3
 	 */
+	@Nullable
 	public ResourceRegionHttpMessageConverter getResourceRegionHttpMessageConverter() {
 		return this.resourceRegionHttpMessageConverter;
 	}
@@ -212,7 +219,7 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 	 * @param contentNegotiationManager the manager in use
 	 * @since 4.3
 	 */
-	public void setContentNegotiationManager(ContentNegotiationManager contentNegotiationManager) {
+	public void setContentNegotiationManager(@Nullable ContentNegotiationManager contentNegotiationManager) {
 		this.contentNegotiationManager = contentNegotiationManager;
 	}
 
@@ -237,6 +244,7 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 	 * Return the specified CORS configuration.
 	 */
 	@Override
+	@Nullable
 	public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
 		return this.corsConfiguration;
 	}
@@ -368,23 +376,19 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 
 		ServletServerHttpResponse outputMessage = new ServletServerHttpResponse(response);
 		if (request.getHeader(HttpHeaders.RANGE) == null) {
+			Assert.state(this.resourceHttpMessageConverter != null, "Not initialized");
 			setHeaders(response, resource, mediaType);
 			this.resourceHttpMessageConverter.write(resource, mediaType, outputMessage);
 		}
 		else {
+			Assert.state(this.resourceRegionHttpMessageConverter != null, "Not initialized");
 			response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes");
 			ServletServerHttpRequest inputMessage = new ServletServerHttpRequest(request);
 			try {
 				List<HttpRange> httpRanges = inputMessage.getHeaders().getRange();
 				response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-				if (httpRanges.size() == 1) {
-					ResourceRegion resourceRegion = httpRanges.get(0).toResourceRegion(resource);
-					this.resourceRegionHttpMessageConverter.write(resourceRegion, mediaType, outputMessage);
-				}
-				else {
 					this.resourceRegionHttpMessageConverter.write(
 							HttpRange.toResourceRegions(httpRanges, resource), mediaType, outputMessage);
-				}
 			}
 			catch (IllegalArgumentException ex) {
 				response.setHeader("Content-Range", "bytes */" + resource.contentLength());
@@ -516,7 +520,8 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 	 */
 	@Nullable
 	protected MediaType getMediaType(HttpServletRequest request, Resource resource) {
-		return this.contentNegotiationStrategy.getMediaTypeForResource(resource);
+		return (this.contentNegotiationStrategy != null ?
+				this.contentNegotiationStrategy.getMediaTypeForResource(resource) : null);
 	}
 
 	/**

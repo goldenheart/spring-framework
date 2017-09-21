@@ -66,11 +66,13 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * Cached introspections results for this object, to prevent encountering
 	 * the cost of JavaBeans introspection every time.
 	 */
+	@Nullable
 	private CachedIntrospectionResults cachedIntrospectionResults;
 
 	/**
 	 * The security context used for invoking the property methods
 	 */
+	@Nullable
 	private AccessControlContext acc;
 
 
@@ -178,7 +180,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * Set the security context used during the invocation of the wrapped instance methods.
 	 * Can be null.
 	 */
-	public void setSecurityContext(AccessControlContext acc) {
+	public void setSecurityContext(@Nullable AccessControlContext acc) {
 		this.acc = acc;
 	}
 
@@ -186,6 +188,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * Return the security context used during the invocation of the wrapped instance methods.
 	 * Can be null.
 	 */
+	@Nullable
 	public AccessControlContext getSecurityContext() {
 		return this.acc;
 	}
@@ -222,6 +225,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	}
 
 	@Override
+	@Nullable
 	protected BeanPropertyHandler getLocalPropertyHandler(String propertyName) {
 		PropertyDescriptor pd = getCachedIntrospectionResults().getPropertyDescriptor(propertyName);
 		if (pd != null) {
@@ -281,11 +285,13 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 		}
 
 		@Override
+		@Nullable
 		public TypeDescriptor nested(int level) {
 			return TypeDescriptor.nested(property(pd), level);
 		}
 
 		@Override
+		@Nullable
 		public Object getValue() throws Exception {
 			final Method readMethod = this.pd.getReadMethod();
 			if (System.getSecurityManager() != null) {

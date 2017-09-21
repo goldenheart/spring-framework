@@ -5,6 +5,7 @@
 :doc-spring-boot: {doc-root}/spring-boot/docs/current/reference
 :toc: left
 :toclevels: 2
+:docinfo1:
 
 The adoption of the test-driven-development (TDD) approach to software
 development is certainly advocated by the Spring team, and so coverage of Spring's
@@ -3627,7 +3628,7 @@ demonstrates the proper way to declare these rules in an integration test.
 public class IntegrationTest {
 
    @ClassRule
-   public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
+   public static final SpringClassRule springClassRule = new SpringClassRule();
 
    @Rule
    public final SpringMethodRule springMethodRule = new SpringMethodRule();

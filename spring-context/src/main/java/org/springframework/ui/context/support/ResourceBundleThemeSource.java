@@ -47,14 +47,18 @@ public class ResourceBundleThemeSource implements HierarchicalThemeSource, BeanC
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	@Nullable
 	private ThemeSource parentThemeSource;
 
 	private String basenamePrefix = "";
 
+	@Nullable
 	private String defaultEncoding;
 
+	@Nullable
 	private Boolean fallbackToSystemLocale;
 
+	@Nullable
 	private ClassLoader beanClassLoader;
 
 	/** Map from theme name to Theme instance */
@@ -75,6 +79,7 @@ public class ResourceBundleThemeSource implements HierarchicalThemeSource, BeanC
 	}
 
 	@Override
+	@Nullable
 	public ThemeSource getParentThemeSource() {
 		return this.parentThemeSource;
 	}
@@ -131,6 +136,7 @@ public class ResourceBundleThemeSource implements HierarchicalThemeSource, BeanC
 	 * @see #createMessageSource
 	 */
 	@Override
+	@Nullable
 	public Theme getTheme(String themeName) {
 		Theme theme = this.themeCache.get(themeName);
 		if (theme == null) {

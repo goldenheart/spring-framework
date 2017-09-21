@@ -157,7 +157,8 @@ public interface Cache {
 		/**
 		 * Return the actual value in the cache.
 		 */
-		@Nullable Object get();
+		@Nullable
+		Object get();
 	}
 
 
@@ -169,6 +170,7 @@ public interface Cache {
 	@SuppressWarnings("serial")
 	class ValueRetrievalException extends RuntimeException {
 
+		@Nullable
 		private final Object key;
 
 		public ValueRetrievalException(@Nullable Object key, Callable<?> loader, Throwable ex) {

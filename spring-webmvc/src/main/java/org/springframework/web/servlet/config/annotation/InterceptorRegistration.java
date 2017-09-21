@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.PathMatcher;
 import org.springframework.util.StringUtils;
@@ -41,6 +42,9 @@ public class InterceptorRegistration {
 
 	private final List<String> excludePatterns = new ArrayList<>();
 
+	private int order = 0;
+
+	@Nullable
 	private PathMatcher pathMatcher;
 
 
@@ -66,6 +70,18 @@ public class InterceptorRegistration {
 	public InterceptorRegistration excludePathPatterns(String... patterns) {
 		this.excludePatterns.addAll(Arrays.asList(patterns));
 		return this;
+	}
+
+	/**
+	 * An order position to be used, default is 0.
+	 */
+	public InterceptorRegistration order(int order){
+		this.order = order;
+		return this;
+	}
+
+	protected int getOrder() {
+		return this.order;
 	}
 
 	/**

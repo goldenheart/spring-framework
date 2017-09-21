@@ -51,12 +51,17 @@ public abstract class AbstractHandlerMapping extends ApplicationObjectSupport im
 
 	private int order = Integer.MAX_VALUE;  // default: same as non-Ordered
 
-	private PathPatternParser patternParser = new PathPatternParser();
+	private final PathPatternParser patternParser;
 
-	private final UrlBasedCorsConfigurationSource globalCorsConfigSource = new UrlBasedCorsConfigurationSource();
+	private final UrlBasedCorsConfigurationSource globalCorsConfigSource;
 
 	private CorsProcessor corsProcessor = new DefaultCorsProcessor();
 
+
+	public AbstractHandlerMapping() {
+		  this.patternParser = new PathPatternParser();
+		  this.globalCorsConfigSource = new UrlBasedCorsConfigurationSource(this.patternParser);
+	}
 
 	/**
 	 * Specify the order value for this HandlerMapping bean.
@@ -87,7 +92,7 @@ public abstract class AbstractHandlerMapping extends ApplicationObjectSupport im
 	 * <p>The default value is {@code true}.
 	 */
 	public void setUseTrailingSlashMatch(boolean trailingSlashMatch) {
-		this.patternParser.setMatchOptionalTrailingSlash(trailingSlashMatch);
+		this.patternParser.setMatchOptionalTrailingSeparator(trailingSlashMatch);
 	}
 
 	/**
@@ -104,13 +109,6 @@ public abstract class AbstractHandlerMapping extends ApplicationObjectSupport im
 	 */
 	public void setCorsConfigurations(Map<String, CorsConfiguration> corsConfigurations) {
 		this.globalCorsConfigSource.setCorsConfigurations(corsConfigurations);
-	}
-
-	/**
-	 * Return the "global" CORS configuration.
-	 */
-	public Map<String, CorsConfiguration> getCorsConfigurations() {
-		return this.globalCorsConfigSource.getCorsConfigurations();
 	}
 
 	/**
@@ -138,7 +136,7 @@ public abstract class AbstractHandlerMapping extends ApplicationObjectSupport im
 				CorsConfiguration configA = this.globalCorsConfigSource.getCorsConfiguration(exchange);
 				CorsConfiguration configB = getCorsConfiguration(handler, exchange);
 				CorsConfiguration config = (configA != null ? configA.combine(configB) : configB);
-				if (!getCorsProcessor().processRequest(config, exchange) ||
+				if (!getCorsProcessor().process(config, exchange) ||
 						CorsUtils.isPreFlightRequest(exchange.getRequest())) {
 					return REQUEST_HANDLED_HANDLER;
 				}

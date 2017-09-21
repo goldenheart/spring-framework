@@ -16,8 +16,6 @@
 
 package org.springframework.web.reactive.result.method.annotation;
 
-import java.util.Optional;
-
 import reactor.core.publisher.Mono;
 
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -58,9 +56,8 @@ public class SessionAttributeMethodArgumentResolver extends AbstractNamedValueAr
 	@Override
 	protected Mono<Object> resolveName(String name, MethodParameter parameter, ServerWebExchange exchange) {
 		return exchange.getSession()
-				.map(session -> session.getAttribute(name))
-				.filter(Optional::isPresent)
-				.map(Optional::get);
+				.filter(session -> session.getAttribute(name) != null)
+				.map(session -> session.getAttribute(name));
 	}
 
 	@Override

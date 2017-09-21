@@ -6,6 +6,7 @@
 :doc-spring-gemfire: {doc-root}/spring-gemfire/docs/current/reference
 :toc: left
 :toclevels: 2
+:docinfo1:
 
 This part of the reference documentation covers the Spring Framework's integration with
 a number of Java EE (and related) technologies.
@@ -8301,7 +8302,7 @@ entry is updated in the cache.
 [source,java,indent=0]
 [subs="verbatim,quotes"]
 ----
-	@Cacheable(cacheNames="foos", **sync="true"**)
+	@Cacheable(cacheNames="foos", **sync=true**)
 	public Foo executeExpensiveOperation(String id) {...}
 ----
 
@@ -9120,3 +9121,4 @@ policies and different topologies which other solutions do not (take for example
 because there would no backing support. Such functionality should be controlled directly
 through the backing cache, when configuring it or through its native API.
 
+include::web/integration.adoc[leveloffset=+1]

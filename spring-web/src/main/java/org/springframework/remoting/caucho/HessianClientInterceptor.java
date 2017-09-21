@@ -68,6 +68,7 @@ public class HessianClientInterceptor extends UrlBasedRemoteAccessor implements 
 
 	private HessianProxyFactory proxyFactory = new HessianProxyFactory();
 
+	@Nullable
 	private Object hessianProxy;
 
 
@@ -238,6 +239,7 @@ public class HessianClientInterceptor extends UrlBasedRemoteAccessor implements 
 
 
 	@Override
+	@Nullable
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		if (this.hessianProxy == null) {
 			throw new IllegalStateException("HessianClientInterceptor is not properly initialized - " +

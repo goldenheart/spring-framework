@@ -17,9 +17,7 @@
 package org.springframework.web.reactive.result.method;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.Set;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -27,15 +25,19 @@ import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.springframework.http.server.PathContainer;
 import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.PathMatcher;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.util.pattern.ParsingPathMatcher;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPatternParser;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 /**
  * Unit tests for {@link AbstractHandlerMethodMapping}.
@@ -136,7 +138,7 @@ public class HandlerMethodMappingTests {
 
 	private static class MyHandlerMethodMapping extends AbstractHandlerMethodMapping<String> {
 
-		private PathMatcher pathMatcher = new ParsingPathMatcher();
+		private PathPatternParser parser = new PathPatternParser();
 
 		@Override
 		protected boolean isHandler(Class<?> beanType) {
@@ -150,20 +152,15 @@ public class HandlerMethodMappingTests {
 		}
 
 		@Override
-		protected Set<String> getMappingPathPatterns(String key) {
-			return (this.pathMatcher.isPattern(key) ? Collections.emptySet() : Collections.singleton(key));
-		}
-
-		@Override
 		protected String getMatchingMapping(String pattern, ServerWebExchange exchange) {
-			String lookupPath = exchange.getRequest().getURI().getPath();
-			return (this.pathMatcher.match(pattern, lookupPath) ? pattern : null);
+			PathContainer lookupPath = exchange.getRequest().getPath().pathWithinApplication();
+			PathPattern parsedPattern = this.parser.parse(pattern);
+			return (parsedPattern.matches(lookupPath) ? pattern : null);
 		}
 
 		@Override
 		protected Comparator<String> getMappingComparator(ServerWebExchange exchange) {
-			String lookupPath = exchange.getRequest().getURI().getPath();
-			return this.pathMatcher.getPatternComparator(lookupPath);
+			return (o1, o2) -> PathPattern.SPECIFICITY_COMPARATOR.compare(parser.parse(o1), parser.parse(o2));
 		}
 
 	}

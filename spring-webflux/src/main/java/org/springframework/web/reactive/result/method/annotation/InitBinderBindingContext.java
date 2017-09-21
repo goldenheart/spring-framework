@@ -23,11 +23,15 @@ import java.util.List;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.support.SessionStatus;
+import org.springframework.web.bind.support.SimpleSessionStatus;
 import org.springframework.web.bind.support.WebBindingInitializer;
 import org.springframework.web.bind.support.WebExchangeDataBinder;
 import org.springframework.web.reactive.BindingContext;
+import org.springframework.web.reactive.HandlerResult;
 import org.springframework.web.reactive.result.method.SyncInvocableHandlerMethod;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebSession;
 
 /**
  * Extends {@link BindingContext} with {@code @InitBinder} method initialization.
@@ -42,6 +46,11 @@ class InitBinderBindingContext extends BindingContext {
 	/* Simple BindingContext to help with the invoking @InitBinder methods */
 	private final BindingContext binderMethodContext;
 
+	private final SessionStatus sessionStatus = new SimpleSessionStatus();
+
+	@Nullable
+	private Runnable saveModelOperation;
+
 
 	InitBinderBindingContext(@Nullable WebBindingInitializer initializer,
 			List<SyncInvocableHandlerMethod> binderMethods) {
@@ -49,6 +58,15 @@ class InitBinderBindingContext extends BindingContext {
 		super(initializer);
 		this.binderMethods = binderMethods;
 		this.binderMethodContext = new BindingContext(initializer);
+	}
+
+
+	/**
+	 * Return the {@link SessionStatus} instance to use that can be used to
+	 * signal that session processing is complete.
+	 */
+	public SessionStatus getSessionStatus() {
+		return this.sessionStatus;
 	}
 
 
@@ -71,10 +89,10 @@ class InitBinderBindingContext extends BindingContext {
 	private void invokeBinderMethod(WebExchangeDataBinder dataBinder,
 			ServerWebExchange exchange, SyncInvocableHandlerMethod binderMethod) {
 
-		Object returnValue = binderMethod.invokeForHandlerResult(exchange, this.binderMethodContext, dataBinder)
-				.getReturnValue();
+		HandlerResult result = binderMethod.invokeForHandlerResult(
+				exchange, this.binderMethodContext, dataBinder);
 
-		if (returnValue != null) {
+		if (result != null && result.getReturnValue() != null) {
 			throw new IllegalStateException(
 					"@InitBinder methods should return void: " + binderMethod);
 		}
@@ -83,6 +101,31 @@ class InitBinderBindingContext extends BindingContext {
 		if (!this.binderMethodContext.getModel().asMap().isEmpty()) {
 			throw new IllegalStateException(
 					"@InitBinder methods should not add model attributes: " + binderMethod);
+		}
+	}
+
+	/**
+	 * Provide the context required to apply {@link #saveModel()} after the
+	 * controller method has been invoked.
+	 */
+	public void setSessionContext(SessionAttributesHandler attributesHandler, WebSession session) {
+		this.saveModelOperation = () -> {
+			if (getSessionStatus().isComplete()) {
+				attributesHandler.cleanupAttributes(session);
+			}
+			else {
+				attributesHandler.storeAttributes(session, getModel().asMap());
+			}
+		};
+	}
+
+	/**
+	 * Save model attributes in the session based on a type-level declarations
+	 * in an {@code @SessionAttributes} annotation.
+	 */
+	public void saveModel() {
+		if (this.saveModelOperation != null) {
+			this.saveModelOperation.run();
 		}
 	}
 

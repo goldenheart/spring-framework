@@ -23,6 +23,7 @@ import java.io.PushbackInputStream;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.lang.Nullable;
 
 /**
  * Implementation of {@link ClientHttpResponse} that can not only check if
@@ -31,12 +32,13 @@ import org.springframework.http.client.ClientHttpResponse;
  *
  * @author Brian Clozel
  * @since 4.1.5
- * @see <a href="http://tools.ietf.org/html/rfc7230#section-3.3.3">rfc7230 Section 3.3.3</a>
+ * @see <a href="http://tools.ietf.org/html/rfc7230#section-3.3.3">RFC 7230 Section 3.3.3</a>
  */
 class MessageBodyClientHttpResponseWrapper implements ClientHttpResponse {
 
 	private final ClientHttpResponse response;
 
+	@Nullable
 	private PushbackInputStream pushbackInputStream;
 
 
@@ -56,12 +58,12 @@ class MessageBodyClientHttpResponseWrapper implements ClientHttpResponse {
 	 * @throws IOException in case of I/O errors
 	 */
 	public boolean hasMessageBody() throws IOException {
-		HttpStatus responseStatus = this.getStatusCode();
-		if (responseStatus.is1xxInformational() || responseStatus == HttpStatus.NO_CONTENT ||
-				responseStatus == HttpStatus.NOT_MODIFIED) {
+		HttpStatus status = HttpStatus.resolve(getRawStatusCode());
+		if (status != null && (status.is1xxInformational() || status == HttpStatus.NO_CONTENT ||
+				status == HttpStatus.NOT_MODIFIED)) {
 			return false;
 		}
-		else if (getHeaders().getContentLength() == 0) {
+		if (getHeaders().getContentLength() == 0) {
 			return false;
 		}
 		return true;

@@ -76,6 +76,7 @@ public class ReflectivePropertyAccessor implements PropertyAccessor {
 
 	private final Map<PropertyCacheKey, TypeDescriptor> typeDescriptorCache = new ConcurrentHashMap<>(64);
 
+	@Nullable
 	private InvokerPair lastReadInvokerPair;
 
 
@@ -83,6 +84,7 @@ public class ReflectivePropertyAccessor implements PropertyAccessor {
 	 * Returns {@code null} which means this is a general purpose accessor.
 	 */
 	@Override
+	@Nullable
 	public Class<?>[] getSpecificTargetClasses() {
 		return null;
 	}
@@ -122,8 +124,10 @@ public class ReflectivePropertyAccessor implements PropertyAccessor {
 		return false;
 	}
 
+	@Nullable
 	public Member getLastReadInvokerPair() {
-		return this.lastReadInvokerPair.member;
+		InvokerPair lastReadInvoker = this.lastReadInvokerPair;
+		return (lastReadInvoker != null ? lastReadInvoker.member : null);
 	}
 
 	@Override
@@ -581,16 +585,13 @@ public class ReflectivePropertyAccessor implements PropertyAccessor {
 
 		private final TypeDescriptor typeDescriptor;
 
-		private final boolean needsToBeMadeAccessible;
-
 		OptimalPropertyAccessor(InvokerPair target) {
 			this.member = target.member;
 			this.typeDescriptor = target.typeDescriptor;
-			this.needsToBeMadeAccessible = (!Modifier.isPublic(this.member.getModifiers()) ||
-					!Modifier.isPublic(this.member.getDeclaringClass().getModifiers()));
 		}
 
 		@Override
+		@Nullable
 		public Class<?>[] getSpecificTargetClasses() {
 			throw new UnsupportedOperationException("Should not be called on an OptimalPropertyAccessor");
 		}
@@ -625,9 +626,7 @@ public class ReflectivePropertyAccessor implements PropertyAccessor {
 			if (this.member instanceof Method) {
 				Method method = (Method) this.member;
 				try {
-					if (this.needsToBeMadeAccessible && !method.isAccessible()) {
-						method.setAccessible(true);
-					}
+					ReflectionUtils.makeAccessible(method);
 					Object value = method.invoke(target);
 					return new TypedValue(value, this.typeDescriptor.narrow(value));
 				}
@@ -638,9 +637,7 @@ public class ReflectivePropertyAccessor implements PropertyAccessor {
 			else {
 				Field field = (Field) this.member;
 				try {
-					if (this.needsToBeMadeAccessible && !field.isAccessible()) {
-						field.setAccessible(true);
-					}
+					ReflectionUtils.makeAccessible(field);
 					Object value = field.get(target);
 					return new TypedValue(value, this.typeDescriptor.narrow(value));
 				}

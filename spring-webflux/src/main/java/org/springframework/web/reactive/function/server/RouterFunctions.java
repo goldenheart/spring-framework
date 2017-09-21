@@ -197,10 +197,20 @@ public abstract class RouterFunctions {
 
 		WebHandler webHandler = toWebHandler(routerFunction, strategies);
 		return WebHttpHandlerBuilder.webHandler(webHandler)
-				.filters(strategies.webFilters())
-				.exceptionHandlers(strategies.exceptionHandlers())
+				.filters(filters -> filters.addAll(strategies.webFilters()))
+				.exceptionHandlers(handlers -> handlers.addAll(strategies.exceptionHandlers()))
 				.localeContextResolver(strategies.localeContextResolver())
 				.build();
+	}
+
+	/**
+	 * Convert the given {@linkplain RouterFunction router function} into a {@link WebHandler}.
+	 * This conversion uses {@linkplain HandlerStrategies#builder() default strategies}.
+	 * @param routerFunction the router function to convert
+	 * @return a web handler that handles web request using the given router function
+	 */
+	public static WebHandler toWebHandler(RouterFunction<?> routerFunction) {
+		return toWebHandler(routerFunction, HandlerStrategies.withDefaults());
 	}
 
 	/**

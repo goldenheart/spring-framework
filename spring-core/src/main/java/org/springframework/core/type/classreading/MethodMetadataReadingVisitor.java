@@ -54,14 +54,14 @@ public class MethodMetadataReadingVisitor extends MethodVisitor implements Metho
 
 	protected final String returnTypeName;
 
+	@Nullable
 	protected final ClassLoader classLoader;
 
 	protected final Set<MethodMetadata> methodMetadataSet;
 
 	protected final Map<String, Set<String>> metaAnnotationMap = new LinkedHashMap<>(4);
 
-	protected final LinkedMultiValueMap<String, AnnotationAttributes> attributesMap =
-			new LinkedMultiValueMap<>(4);
+	protected final LinkedMultiValueMap<String, AnnotationAttributes> attributesMap = new LinkedMultiValueMap<>(4);
 
 
 	public MethodMetadataReadingVisitor(String methodName, int access, String declaringClassName,
@@ -116,11 +116,13 @@ public class MethodMetadataReadingVisitor extends MethodVisitor implements Metho
 	}
 
 	@Override
+	@Nullable
 	public AnnotationAttributes getAnnotationAttributes(String annotationName) {
 		return getAnnotationAttributes(annotationName, false);
 	}
 
 	@Override
+	@Nullable
 	public AnnotationAttributes getAnnotationAttributes(String annotationName, boolean classValuesAsString) {
 		AnnotationAttributes raw = AnnotationReadingVisitorUtils.getMergedAnnotationAttributes(
 				this.attributesMap, this.metaAnnotationMap, annotationName);
@@ -132,11 +134,13 @@ public class MethodMetadataReadingVisitor extends MethodVisitor implements Metho
 	}
 
 	@Override
+	@Nullable
 	public MultiValueMap<String, Object> getAllAnnotationAttributes(String annotationName) {
 		return getAllAnnotationAttributes(annotationName, false);
 	}
 
 	@Override
+	@Nullable
 	public MultiValueMap<String, Object> getAllAnnotationAttributes(String annotationName, boolean classValuesAsString) {
 		if (!this.attributesMap.containsKey(annotationName)) {
 			return null;

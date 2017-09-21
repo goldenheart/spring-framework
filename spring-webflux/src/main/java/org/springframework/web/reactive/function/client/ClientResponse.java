@@ -16,6 +16,7 @@
 
 package org.springframework.web.reactive.function.client;
 
+import java.io.Closeable;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -23,10 +24,12 @@ import java.util.OptionalLong;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.reactive.ClientHttpResponse;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyExtractor;
@@ -41,7 +44,7 @@ import org.springframework.web.reactive.function.BodyExtractor;
  * @author Arjen Poutsma
  * @since 5.0
  */
-public interface ClientResponse {
+public interface ClientResponse extends Closeable {
 
 	/**
 	 * Return the status code of this response.
@@ -75,12 +78,73 @@ public interface ClientResponse {
 	<T> Mono<T> bodyToMono(Class<? extends T> elementClass);
 
 	/**
+	 * Extract the body to a {@code Mono}.
+	 * @param typeReference a type reference describing the expected response body type
+	 * @param <T> the element type
+	 * @return a mono containing the body of the given type {@code T}
+	 */
+	<T> Mono<T> bodyToMono(ParameterizedTypeReference<T> typeReference);
+
+	/**
 	 * Extract the body to a {@code Flux}.
 	 * @param elementClass the class of element in the {@code Flux}
 	 * @param <T> the element type
 	 * @return a flux containing the body of the given type {@code T}
 	 */
 	<T> Flux<T> bodyToFlux(Class<? extends T> elementClass);
+
+	/**
+	 * Extract the body to a {@code Flux}.
+	 * @param typeReference a type reference describing the expected response body type
+	 * @param <T> the element type
+	 * @return a flux containing the body of the given type {@code T}
+	 */
+	<T> Flux<T> bodyToFlux(ParameterizedTypeReference<T> typeReference);
+
+	/**
+	 * Return this response as a delayed {@code ResponseEntity}.
+	 * @param bodyType the expected response body type
+	 * @param <T> response body type
+	 * @return {@code Mono} with the {@code ResponseEntity}
+	 */
+	<T> Mono<ResponseEntity<T>> toEntity(Class<T> bodyType);
+
+	/**
+	 * Return this response as a delayed {@code ResponseEntity}.
+	 * @param typeReference a type reference describing the expected response body type
+	 * @param <T> response body type
+	 * @return {@code Mono} with the {@code ResponseEntity}
+	 */
+	<T> Mono<ResponseEntity<T>> toEntity(ParameterizedTypeReference<T> typeReference);
+
+	/**
+	 * Return this response as a delayed list of {@code ResponseEntity}s.
+	 * @param elementType the expected response body list element type
+	 * @param <T> the type of elements in the list
+	 * @return {@code Mono} with the list of {@code ResponseEntity}s
+	 */
+	<T> Mono<ResponseEntity<List<T>>> toEntityList(Class<T> elementType);
+
+	/**
+	 * Return this response as a delayed list of {@code ResponseEntity}s.
+	 * @param typeReference a type reference describing the expected response body type
+	 * @param <T> the type of elements in the list
+	 * @return {@code Mono} with the list of {@code ResponseEntity}s
+	 */
+	<T> Mono<ResponseEntity<List<T>>> toEntityList(ParameterizedTypeReference<T> typeReference);
+
+	/**
+	 * Close this response, freeing any resources created.
+	 * <p>This non-blocking method has to be called once the response has been processed
+	 * and the resources are no longer needed.
+	 * <p>{@code ClientResponse.bodyTo*}, {@code ClientResponse.toEntity*}
+	 * and all methods under {@code WebClient.retrieve()} will close the response
+	 * automatically.
+	 * <p>It is required to call close() manually otherwise; not doing so might
+	 * create resource leaks or connection issues.
+	 */
+	@Override
+	void close();
 
 
 	/**
@@ -112,6 +176,6 @@ public interface ClientResponse {
 		 * Return the headers as a {@link HttpHeaders} instance.
 		 */
 		HttpHeaders asHttpHeaders();
-
 	}
+
 }

@@ -113,21 +113,26 @@ import org.springframework.util.StringValueResolver;
 public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements ConfigurableBeanFactory {
 
 	/** Parent bean factory, for bean inheritance support */
+	@Nullable
 	private BeanFactory parentBeanFactory;
 
 	/** ClassLoader to resolve bean class names with, if necessary */
+	@Nullable
 	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
 	/** ClassLoader to temporarily resolve bean class names with, if necessary */
+	@Nullable
 	private ClassLoader tempClassLoader;
 
 	/** Whether to cache bean metadata or rather reobtain it for every access */
 	private boolean cacheBeanMetadata = true;
 
 	/** Resolution strategy for expressions in bean definition values */
+	@Nullable
 	private BeanExpressionResolver beanExpressionResolver;
 
 	/** Spring ConversionService to use instead of PropertyEditors */
+	@Nullable
 	private ConversionService conversionService;
 
 	/** Custom PropertyEditorRegistrars to apply to the beans of this factory */
@@ -137,6 +142,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private final Map<Class<?>, Class<? extends PropertyEditor>> customEditors = new HashMap<>(4);
 
 	/** A custom TypeConverter to use, overriding the default PropertyEditor mechanism */
+	@Nullable
 	private TypeConverter typeConverter;
 
 	/** String resolvers to apply e.g. to annotation attribute values */
@@ -155,6 +161,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private final Map<String, Scope> scopes = new LinkedHashMap<>(8);
 
 	/** Security context used when running with a SecurityManager */
+	@Nullable
 	private SecurityContextProvider securityContextProvider;
 
 	/** Map from bean name to merged RootBeanDefinition */
@@ -361,21 +368,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// Check if required type matches the type of the actual bean instance.
-		// Note that the following return declarations are technically violating the
-		// non-null policy for the getBean methods: However, these will only result
-		// in null under very specific circumstances: such as a user-declared factory
-		// method returning null or a user-provided FactoryBean.getObject() returning
-		// null, without any custom post-processing of such null values. We will pass
-		// them on as null to corresponding injection points in that exceptional case
-		// but do not expect user-level getBean callers to deal with such null values.
-		// In the end, regular getBean callers should be able to assign the outcome
-		// to non-null variables/arguments without being compromised by rather esoteric
-		// corner cases, in particular in functional configuration and Kotlin scenarios.
-		// A future Spring generation might eventually forbid null values completely
-		// and throw IllegalStateExceptions instead of leniently passing them through.
-		if (requiredType != null && bean != null && !requiredType.isInstance(bean)) {
+		if (requiredType != null && !requiredType.isInstance(bean)) {
 			try {
-				return getTypeConverter().convertIfNecessary(bean, requiredType);
+				T convertedBean = getTypeConverter().convertIfNecessary(bean, requiredType);
+				if (convertedBean == null) {
+					throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
+				}
+				return convertedBean;
 			}
 			catch (TypeMismatchException ex) {
 				if (logger.isDebugEnabled()) {
@@ -385,8 +384,6 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
 			}
 		}
-		// For the nullability warning, see the elaboration in the comment above;
-		// in short: This is never going to be null unless user-declared code enforces null.
 		return (T) bean;
 	}
 
@@ -413,9 +410,6 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			else {
 				return !BeanFactoryUtils.isFactoryDereference(name);
 			}
-		}
-		else if (containsSingleton(beanName)) {
-			return true;
 		}
 
 		// No singleton instance found -> check bean definition.
@@ -489,7 +483,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		// Check manually registered singletons.
 		Object beanInstance = getSingleton(beanName, false);
-		if (beanInstance != null) {
+		if (beanInstance != null && beanInstance.getClass() != NullBean.class) {
 			if (beanInstance instanceof FactoryBean) {
 				if (!BeanFactoryUtils.isFactoryDereference(name)) {
 					Class<?> type = getTypeForFactoryBean((FactoryBean<?>) beanInstance);
@@ -592,22 +586,19 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	@Override
+	@Nullable
 	public Class<?> getType(String name) throws NoSuchBeanDefinitionException {
 		String beanName = transformedBeanName(name);
 
 		// Check manually registered singletons.
 		Object beanInstance = getSingleton(beanName, false);
-		if (beanInstance != null) {
+		if (beanInstance != null && beanInstance.getClass() != NullBean.class) {
 			if (beanInstance instanceof FactoryBean && !BeanFactoryUtils.isFactoryDereference(name)) {
 				return getTypeForFactoryBean((FactoryBean<?>) beanInstance);
 			}
 			else {
 				return beanInstance.getClass();
 			}
-		}
-		else if (containsSingleton(beanName) && !containsBeanDefinition(beanName)) {
-			// null instance registered
-			return null;
 		}
 
 		// No singleton instance found -> check bean definition.
@@ -681,6 +672,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	//---------------------------------------------------------------------
 
 	@Override
+	@Nullable
 	public BeanFactory getParentBeanFactory() {
 		return this.parentBeanFactory;
 	}
@@ -711,6 +703,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	@Override
+	@Nullable
 	public ClassLoader getBeanClassLoader() {
 		return this.beanClassLoader;
 	}
@@ -721,6 +714,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	@Override
+	@Nullable
 	public ClassLoader getTempClassLoader() {
 		return this.tempClassLoader;
 	}
@@ -741,6 +735,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	@Override
+	@Nullable
 	public BeanExpressionResolver getBeanExpressionResolver() {
 		return this.beanExpressionResolver;
 	}
@@ -751,6 +746,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	@Override
+	@Nullable
 	public ConversionService getConversionService() {
 		return this.conversionService;
 	}
@@ -828,6 +824,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	@Override
+	@Nullable
 	public String resolveEmbeddedValue(@Nullable String value) {
 		if (value == null) {
 			return null;
@@ -914,6 +911,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	@Override
+	@Nullable
 	public Scope getRegisteredScope(String scopeName) {
 		Assert.notNull(scopeName, "Scope identifier must not be null");
 		return this.scopes.get(scopeName);
@@ -998,10 +996,6 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object beanInstance = getSingleton(beanName, false);
 		if (beanInstance != null) {
 			return (beanInstance instanceof FactoryBean);
-		}
-		else if (containsSingleton(beanName)) {
-			// null instance registered
-			return false;
 		}
 
 		// No singleton instance found -> check bean definition.
@@ -1172,7 +1166,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					Throwable rootCause = ex.getMostSpecificCause();
 					if (rootCause instanceof BeanCurrentlyInCreationException) {
 						BeanCreationException bce = (BeanCreationException) rootCause;
-						if (isCurrentlyInCreation(bce.getBeanName())) {
+						String bceBeanName = bce.getBeanName();
+						if (bceBeanName != null && isCurrentlyInCreation(bceBeanName)) {
 							if (logger.isDebugEnabled()) {
 								logger.debug("PropertyEditorRegistrar [" + registrar.getClass().getName() +
 										"] failed because it tried to obtain currently created bean '" +
@@ -1615,13 +1610,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param mbd the merged bean definition
 	 * @return the object to expose for the bean
 	 */
-	@Nullable
 	protected Object getObjectForBeanInstance(
-			@Nullable Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
-
-		if (beanInstance == null) {
-			return null;
-		}
+			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
 		if (BeanFactoryUtils.isFactoryDereference(name) && !(beanInstance instanceof FactoryBean)) {
@@ -1766,7 +1756,6 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @return a new instance of the bean
 	 * @throws BeanCreationException if the bean could not be created
 	 */
-	@Nullable
 	protected abstract Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
 			throws BeanCreationException;
 

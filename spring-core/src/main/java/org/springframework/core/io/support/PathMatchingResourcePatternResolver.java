@@ -182,6 +182,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
 	private static final Log logger = LogFactory.getLog(PathMatchingResourcePatternResolver.class);
 
+	@Nullable
 	private static Method equinoxResolveMethod;
 
 	static {
@@ -243,6 +244,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	}
 
 	@Override
+	@Nullable
 	public ClassLoader getClassLoader() {
 		return getResourceLoader().getClassLoader();
 	}

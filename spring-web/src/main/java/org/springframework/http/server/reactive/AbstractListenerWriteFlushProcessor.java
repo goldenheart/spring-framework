@@ -26,6 +26,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -48,6 +49,7 @@ public abstract class AbstractListenerWriteFlushProcessor<T> implements Processo
 
 	private volatile boolean subscriberCompleted;
 
+	@Nullable
 	private Subscription subscription;
 
 
@@ -105,8 +107,8 @@ public abstract class AbstractListenerWriteFlushProcessor<T> implements Processo
 
 	/**
 	 * Invoked when an error happens while flushing. Defaults to no-op.
-	 * Servlet 3.1 based implementations will receive
-	 * {@link AsyncListener#onError(Throwable)} event.
+	 * Servlet 3.1 based implementations will receive an
+	 * {@link javax.servlet.AsyncListener#onError} event.
 	 */
 	protected void flushingFailed(Throwable t) {
 	}
@@ -121,6 +123,29 @@ public abstract class AbstractListenerWriteFlushProcessor<T> implements Processo
 	 * Flush the output.
 	 */
 	protected abstract void flush() throws IOException;
+
+	/**
+	 * Whether writing is possible.
+	 */
+	protected abstract boolean isWritePossible();
+
+	/**
+	 * Whether flushing is pending.
+	 */
+	protected abstract boolean isFlushPending();
+
+	/**
+	 * Listeners can call this to notify when flushing is possible.
+	 */
+	protected final void onFlushPossible() {
+		this.state.get().onFlushPossible(this);
+	}
+
+	private void flushIfPossible() {
+		if (isWritePossible()) {
+			onFlushPossible();
+		}
+	}
 
 
 	private boolean changeState(State oldState, State newState) {
@@ -179,12 +204,18 @@ public abstract class AbstractListenerWriteFlushProcessor<T> implements Processo
 					return;
 				}
 				if (processor.subscriberCompleted) {
-					if (processor.changeState(this, COMPLETED)) {
+					if (processor.isFlushPending()) {
+						// Ensure the final flush
+						processor.changeState(this, FLUSHING);
+						processor.flushIfPossible();
+					}
+					else if (processor.changeState(this, COMPLETED)) {
 						processor.resultPublisher.publishComplete();
 					}
 				}
 				else {
 					if (processor.changeState(this, REQUESTED)) {
+						Assert.state(processor.subscription != null, "No subscription");
 						processor.subscription.request(1);
 					}
 				}
@@ -192,6 +223,28 @@ public abstract class AbstractListenerWriteFlushProcessor<T> implements Processo
 			@Override
 			public <T> void onComplete(AbstractListenerWriteFlushProcessor<T> processor) {
 				processor.subscriberCompleted = true;
+			}
+		},
+
+		FLUSHING {
+			public <T> void onFlushPossible(AbstractListenerWriteFlushProcessor<T> processor) {
+				try {
+					processor.flush();
+				}
+				catch (IOException ex) {
+					processor.flushingFailed(ex);
+					return;
+				}
+				if (processor.changeState(this, COMPLETED)) {
+					processor.resultPublisher.publishComplete();
+				}
+			}
+			public <T> void onNext(AbstractListenerWriteFlushProcessor<T> processor, Publisher<? extends T> publisher) {
+				// ignore
+			}
+			@Override
+			public <T> void onComplete(AbstractListenerWriteFlushProcessor<T> processor) {
+				// ignore
 			}
 		},
 
@@ -229,6 +282,10 @@ public abstract class AbstractListenerWriteFlushProcessor<T> implements Processo
 		}
 
 		public <T> void writeComplete(AbstractListenerWriteFlushProcessor<T> processor) {
+			// ignore
+		}
+
+		public <T> void onFlushPossible(AbstractListenerWriteFlushProcessor<T> processor) {
 			// ignore
 		}
 

@@ -51,6 +51,7 @@ import org.springframework.util.StringValueResolver;
 public class FormattingConversionService extends GenericConversionService
 		implements FormatterRegistry, EmbeddedValueResolverAware {
 
+	@Nullable
 	private StringValueResolver embeddedValueResolver;
 
 	private final Map<AnnotationConverterKey, GenericConverter> cachedPrinters = new ConcurrentHashMap<>(64);
@@ -188,6 +189,7 @@ public class FormattingConversionService extends GenericConversionService
 		}
 
 		@Override
+		@Nullable
 		public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 			String text = (String) source;
 			if (!StringUtils.hasText(text)) {
@@ -246,6 +248,7 @@ public class FormattingConversionService extends GenericConversionService
 
 		@Override
 		@SuppressWarnings("unchecked")
+		@Nullable
 		public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 			Annotation ann = sourceType.getAnnotation(this.annotationType);
 			if (ann == null) {
@@ -300,6 +303,7 @@ public class FormattingConversionService extends GenericConversionService
 
 		@Override
 		@SuppressWarnings("unchecked")
+		@Nullable
 		public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 			Annotation ann = targetType.getAnnotation(this.annotationType);
 			if (ann == null) {

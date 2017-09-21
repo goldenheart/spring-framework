@@ -62,6 +62,7 @@ final class MapToMapConverter implements ConditionalGenericConverter {
 
 	@Override
 	@SuppressWarnings("unchecked")
+	@Nullable
 	public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 		if (source == null) {
 			return null;
@@ -132,8 +133,10 @@ final class MapToMapConverter implements ConditionalGenericConverter {
 
 	private static class MapEntry {
 
+		@Nullable
 		private final Object key;
 
+		@Nullable
 		private final Object value;
 
 		public MapEntry(@Nullable Object key, @Nullable Object value) {

@@ -52,7 +52,7 @@ public class DefaultCorsProcessor implements CorsProcessor {
 
 
 	@Override
-	public boolean processRequest(@Nullable CorsConfiguration config, ServerWebExchange exchange) {
+	public boolean process(@Nullable CorsConfiguration config, ServerWebExchange exchange) {
 
 		ServerHttpRequest request = exchange.getRequest();
 		ServerHttpResponse response = exchange.getResponse();
@@ -108,14 +108,24 @@ public class DefaultCorsProcessor implements CorsProcessor {
 
 		String requestOrigin = request.getHeaders().getOrigin();
 		String allowOrigin = checkOrigin(config, requestOrigin);
+		if (allowOrigin == null) {
+			logger.debug("Rejecting CORS request because '" + requestOrigin + "' origin is not allowed");
+			rejectRequest(response);
+			return false;
+		}
 
 		HttpMethod requestMethod = getMethodToUse(request, preFlightRequest);
 		List<HttpMethod> allowMethods = checkMethods(config, requestMethod);
+		if (allowMethods == null) {
+			logger.debug("Rejecting CORS request because '" + requestMethod + "' request method is not allowed");
+			rejectRequest(response);
+			return false;
+		}
 
 		List<String> requestHeaders = getHeadersToUse(request, preFlightRequest);
 		List<String> allowHeaders = checkHeaders(config, requestHeaders);
-
-		if (allowOrigin == null || allowMethods == null || (preFlightRequest && allowHeaders == null)) {
+		if (preFlightRequest && allowHeaders == null) {
+			logger.debug("Rejecting CORS request because '" + requestHeaders + "' request headers are not allowed");
 			rejectRequest(response);
 			return false;
 		}

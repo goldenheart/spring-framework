@@ -61,6 +61,7 @@ public class CaffeineCacheManager implements CacheManager {
 
 	private Caffeine<Object, Object> cacheBuilder = Caffeine.newBuilder();
 
+	@Nullable
 	private CacheLoader<Object, Object> cacheLoader;
 
 	private boolean allowNullValues = true;
@@ -175,6 +176,7 @@ public class CaffeineCacheManager implements CacheManager {
 	}
 
 	@Override
+	@Nullable
 	public Cache getCache(String name) {
 		Cache cache = this.cacheMap.get(name);
 		if (cache == null && this.dynamic) {

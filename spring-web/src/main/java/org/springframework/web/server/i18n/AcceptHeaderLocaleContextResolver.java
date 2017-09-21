@@ -42,6 +42,7 @@ public class AcceptHeaderLocaleContextResolver implements LocaleContextResolver 
 
 	private final List<Locale> supportedLocales = new ArrayList<>(4);
 
+	@Nullable
 	private Locale defaultLocale;
 
 
@@ -50,7 +51,7 @@ public class AcceptHeaderLocaleContextResolver implements LocaleContextResolver 
 	 * determined via {@link HttpHeaders#getAcceptLanguageAsLocales()}.
 	 * @param locales the supported locales
 	 */
-	public void setSupportedLocales(List<Locale> locales) {
+	public void setSupportedLocales(@Nullable List<Locale> locales) {
 		this.supportedLocales.clear();
 		if (locales != null) {
 			this.supportedLocales.addAll(locales);
@@ -69,7 +70,7 @@ public class AcceptHeaderLocaleContextResolver implements LocaleContextResolver 
 	 * have an "Accept-Language" header (not set by default).
 	 * @param defaultLocale the default locale to use
 	 */
-	public void setDefaultLocale(Locale defaultLocale) {
+	public void setDefaultLocale(@Nullable Locale defaultLocale) {
 		this.defaultLocale = defaultLocale;
 	}
 

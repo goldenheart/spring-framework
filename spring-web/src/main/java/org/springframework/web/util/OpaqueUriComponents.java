@@ -40,6 +40,7 @@ final class OpaqueUriComponents extends UriComponents {
 
 	private static final MultiValueMap<String, String> QUERY_PARAMS_NONE = new LinkedMultiValueMap<>(0);
 
+	@Nullable
 	private final String ssp;
 
 
@@ -50,16 +51,19 @@ final class OpaqueUriComponents extends UriComponents {
 
 
 	@Override
+	@Nullable
 	public String getSchemeSpecificPart() {
 		return this.ssp;
 	}
 
 	@Override
+	@Nullable
 	public String getUserInfo() {
 		return null;
 	}
 
 	@Override
+	@Nullable
 	public String getHost() {
 		return null;
 	}
@@ -70,6 +74,7 @@ final class OpaqueUriComponents extends UriComponents {
 	}
 
 	@Override
+	@Nullable
 	public String getPath() {
 		return null;
 	}
@@ -80,6 +85,7 @@ final class OpaqueUriComponents extends UriComponents {
 	}
 
 	@Override
+	@Nullable
 	public String getQuery() {
 		return null;
 	}

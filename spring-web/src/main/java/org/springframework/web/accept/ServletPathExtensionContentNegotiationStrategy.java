@@ -17,7 +17,6 @@
 package org.springframework.web.accept;
 
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 
 import org.springframework.core.io.Resource;
@@ -68,15 +67,14 @@ public class ServletPathExtensionContentNegotiationStrategy extends PathExtensio
 	 * {@link org.springframework.http.MediaTypeFactory} lookup.
 	 */
 	@Override
+	@Nullable
 	protected MediaType handleNoMatch(NativeWebRequest webRequest, String extension)
 			throws HttpMediaTypeNotAcceptableException {
 
 		MediaType mediaType = null;
-		if (this.servletContext != null) {
-			String mimeType = this.servletContext.getMimeType("file." + extension);
-			if (StringUtils.hasText(mimeType)) {
-				mediaType = MediaType.parseMediaType(mimeType);
-			}
+		String mimeType = this.servletContext.getMimeType("file." + extension);
+		if (StringUtils.hasText(mimeType)) {
+			mediaType = MediaType.parseMediaType(mimeType);
 		}
 		if (mediaType == null || MediaType.APPLICATION_OCTET_STREAM.equals(mediaType)) {
 			MediaType superMediaType = super.handleNoMatch(webRequest, extension);
@@ -98,11 +96,9 @@ public class ServletPathExtensionContentNegotiationStrategy extends PathExtensio
 	@Override
 	public MediaType getMediaTypeForResource(Resource resource) {
 		MediaType mediaType = null;
-		if (this.servletContext != null) {
-			String mimeType = this.servletContext.getMimeType(resource.getFilename());
-			if (StringUtils.hasText(mimeType)) {
-				mediaType = MediaType.parseMediaType(mimeType);
-			}
+		String mimeType = this.servletContext.getMimeType(resource.getFilename());
+		if (StringUtils.hasText(mimeType)) {
+			mediaType = MediaType.parseMediaType(mimeType);
 		}
 		if (mediaType == null || MediaType.APPLICATION_OCTET_STREAM.equals(mediaType)) {
 			MediaType superMediaType = super.getMediaTypeForResource(resource);

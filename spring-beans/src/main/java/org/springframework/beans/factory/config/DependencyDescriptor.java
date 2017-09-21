@@ -26,7 +26,6 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Optional;
 
-import kotlin.Metadata;
 import kotlin.reflect.KProperty;
 import kotlin.reflect.jvm.ReflectJvmMapping;
 
@@ -52,18 +51,33 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public class DependencyDescriptor extends InjectionPoint implements Serializable {
 
-	private static final boolean kotlinPresent =
-			ClassUtils.isPresent("kotlin.Unit", DependencyDescriptor.class.getClassLoader());
+	@Nullable
+	private static final Class<?> kotlinMetadata;
+
+	static {
+		Class<?> metadata;
+		try {
+			metadata = ClassUtils.forName("kotlin.Metadata", DependencyDescriptor.class.getClassLoader());
+		}
+		catch (ClassNotFoundException ex) {
+			// Kotlin API not available - no Kotlin support
+			metadata = null;
+		}
+		kotlinMetadata = metadata;
+	}
 
 
 	private final Class<?> declaringClass;
 
+	@Nullable
 	private String methodName;
 
+	@Nullable
 	private Class<?>[] parameterTypes;
 
 	private int parameterIndex;
 
+	@Nullable
 	private String fieldName;
 
 	private final boolean required;
@@ -72,8 +86,10 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 
 	private int nestingLevel = 1;
 
+	@Nullable
 	private Class<?> containingClass;
 
+	@Nullable
 	private volatile ResolvableType resolvableType;
 
 
@@ -98,8 +114,8 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 		super(methodParameter);
 
 		this.declaringClass = methodParameter.getDeclaringClass();
-		if (this.methodParameter.getMethod() != null) {
-			this.methodName = this.methodParameter.getMethod().getName();
+		if (methodParameter.getMethod() != null) {
+			this.methodName = methodParameter.getMethod().getName();
 		}
 		this.parameterTypes = methodParameter.getExecutable().getParameterTypes();
 		this.parameterIndex = methodParameter.getParameterIndex();
@@ -167,11 +183,20 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 
 		if (this.field != null) {
 			return !(this.field.getType() == Optional.class || hasNullableAnnotation() ||
-					(kotlinPresent && KotlinDelegate.isNullable(this.field)));
+					(useKotlinSupport(this.field.getDeclaringClass()) && KotlinDelegate.isNullable(this.field)));
 		}
 		else {
-			return !this.methodParameter.isOptional();
+			return !obtainMethodParameter().isOptional();
 		}
+	}
+
+	/**
+	 * Return true if Kotlin is present and if the specified class is a Kotlin one.
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean useKotlinSupport(Class<?> clazz) {
+		return (kotlinMetadata != null &&
+				clazz.getDeclaredAnnotation((Class<? extends Annotation>) kotlinMetadata) != null);
 	}
 
 	/**
@@ -247,7 +272,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	public Object resolveCandidate(String beanName, Class<?> requiredType, BeanFactory beanFactory)
 			throws BeansException {
 
-		return beanFactory.getBean(beanName, requiredType);
+		return beanFactory.getBean(beanName);
 	}
 
 
@@ -282,12 +307,14 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	 * @since 4.0
 	 */
 	public ResolvableType getResolvableType() {
-		if (this.resolvableType == null) {
-			this.resolvableType = (this.field != null ?
+		ResolvableType resolvableType = this.resolvableType;
+		if (resolvableType == null) {
+			resolvableType = (this.field != null ?
 					ResolvableType.forField(this.field, this.nestingLevel, this.containingClass) :
-					ResolvableType.forMethodParameter(this.methodParameter));
+					ResolvableType.forMethodParameter(obtainMethodParameter()));
+			this.resolvableType = resolvableType;
 		}
-		return this.resolvableType;
+		return resolvableType;
 	}
 
 	/**
@@ -333,7 +360,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	 */
 	@Nullable
 	public String getDependencyName() {
-		return (this.field != null ? this.field.getName() : this.methodParameter.getParameterName());
+		return (this.field != null ? this.field.getName() : obtainMethodParameter().getParameterName());
 	}
 
 	/**
@@ -367,7 +394,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 			}
 		}
 		else {
-			return this.methodParameter.getNestedParameterType();
+			return obtainMethodParameter().getNestedParameterType();
 		}
 	}
 
@@ -428,11 +455,8 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 		 * Check whether the specified {@link Field} represents a nullable Kotlin type or not.
 		 */
 		public static boolean isNullable(Field field) {
-			if (field.getDeclaringClass().isAnnotationPresent(Metadata.class)) {
-				KProperty<?> property = ReflectJvmMapping.getKotlinProperty(field);
-				return (property != null && property.getReturnType().isMarkedNullable());
-			}
-			return false;
+			KProperty<?> property = ReflectJvmMapping.getKotlinProperty(field);
+			return (property != null && property.getReturnType().isMarkedNullable());
 		}
 	}
 

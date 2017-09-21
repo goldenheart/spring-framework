@@ -297,6 +297,7 @@ public class AsyncRestTemplate extends org.springframework.http.client.support.I
 	private static ListenableFuture<URI> adaptToLocationHeader(ListenableFuture<HttpHeaders> future) {
 		return new ListenableFutureAdapter<URI, HttpHeaders>(future) {
 			@Override
+			@Nullable
 			protected URI adapt(HttpHeaders headers) throws ExecutionException {
 				return headers.getLocation();
 			}
@@ -522,7 +523,7 @@ public class AsyncRestTemplate extends org.springframework.http.client.support.I
 		if (logger.isDebugEnabled()) {
 			try {
 				logger.debug("Async " + method.name() + " request for \"" + url + "\" resulted in " +
-						response.getStatusCode() + " (" + response.getStatusText() + ")");
+						response.getRawStatusCode() + " (" + response.getStatusText() + ")");
 			}
 			catch (IOException ex) {
 				// ignore
@@ -534,7 +535,7 @@ public class AsyncRestTemplate extends org.springframework.http.client.support.I
 		if (logger.isWarnEnabled()) {
 			try {
 				logger.warn("Async " + method.name() + " request for \"" + url + "\" resulted in " +
-						response.getStatusCode() + " (" + response.getStatusText() + "); invoking error handler");
+						response.getRawStatusCode() + " (" + response.getStatusText() + "); invoking error handler");
 			}
 			catch (IOException ex) {
 				// ignore
@@ -593,6 +594,7 @@ public class AsyncRestTemplate extends org.springframework.http.client.support.I
 
 		private final URI url;
 
+		@Nullable
 		private final ResponseExtractor<T> responseExtractor;
 
 		public ResponseExtractorFuture(HttpMethod method, URI url,
@@ -606,6 +608,7 @@ public class AsyncRestTemplate extends org.springframework.http.client.support.I
 		}
 
 		@Override
+		@Nullable
 		protected final T adapt(ClientHttpResponse response) throws ExecutionException {
 			try {
 				if (!getErrorHandler().hasError(response)) {
@@ -659,6 +662,7 @@ public class AsyncRestTemplate extends org.springframework.http.client.support.I
 					return request.getBody();
 				}
 				@Override
+				@Nullable
 				public HttpMethod getMethod() {
 					return request.getMethod();
 				}

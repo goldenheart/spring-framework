@@ -102,8 +102,10 @@ public abstract class MappingSqlQueryWithParameters<T> extends SqlQuery<T> {
 	 */
 	protected class RowMapperImpl implements RowMapper<T> {
 
+		@Nullable
 		private final Object[] params;
 
+		@Nullable
 		private final Map<?, ?> context;
 
 		/**
@@ -115,6 +117,7 @@ public abstract class MappingSqlQueryWithParameters<T> extends SqlQuery<T> {
 		}
 
 		@Override
+		@Nullable
 		public T mapRow(ResultSet rs, int rowNum) throws SQLException {
 			return MappingSqlQueryWithParameters.this.mapRow(rs, rowNum, this.params, this.context);
 		}

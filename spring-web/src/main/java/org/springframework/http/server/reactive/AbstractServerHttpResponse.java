@@ -19,7 +19,6 @@ package org.springframework.http.server.reactive;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -62,13 +61,12 @@ public abstract class AbstractServerHttpResponse implements ServerHttpResponse {
 
 	private final DataBufferFactory dataBufferFactory;
 
+	@Nullable
 	private HttpStatus statusCode;
 
 	private final HttpHeaders headers;
 
 	private final MultiValueMap<String, ResponseCookie> cookies;
-
-	private Function<String, String> urlEncoder = url -> url;
 
 	private final AtomicReference<State> state = new AtomicReference<>(State.NEW);
 
@@ -89,11 +87,10 @@ public abstract class AbstractServerHttpResponse implements ServerHttpResponse {
 	}
 
 	@Override
-	public boolean setStatusCode(HttpStatus statusCode) {
-		Assert.notNull(statusCode, "Status code must not be null");
+	public boolean setStatusCode(@Nullable HttpStatus statusCode) {
 		if (this.state.get() == State.COMMITTED) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Can't set the status " + statusCode.toString() +
+				logger.debug("Can't set the status " + (statusCode != null ? statusCode.toString() : "null") +
 						" because the HTTP response has already been committed");
 			}
 			return false;
@@ -105,6 +102,7 @@ public abstract class AbstractServerHttpResponse implements ServerHttpResponse {
 	}
 
 	@Override
+	@Nullable
 	public HttpStatus getStatusCode() {
 		return this.statusCode;
 	}
@@ -132,16 +130,6 @@ public abstract class AbstractServerHttpResponse implements ServerHttpResponse {
 		else {
 			getCookies().add(cookie.getName(), cookie);
 		}
-	}
-
-	@Override
-	public String encodeUrl(String url) {
-		return (this.urlEncoder != null ? this.urlEncoder.apply(url) : url);
-	}
-
-	@Override
-	public void registerUrlEncoder(Function<String, String> encoder) {
-		this.urlEncoder = (this.urlEncoder != null ? this.urlEncoder.andThen(encoder) : encoder);
 	}
 
 	@Override

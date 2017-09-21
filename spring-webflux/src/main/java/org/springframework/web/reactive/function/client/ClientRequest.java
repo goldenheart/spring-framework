@@ -17,11 +17,14 @@
 package org.springframework.web.reactive.function.client;
 
 import java.net.URI;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.reactive.ClientHttpRequest;
@@ -69,6 +72,27 @@ public interface ClientRequest {
 	BodyInserter<?, ? super ClientHttpRequest> body();
 
 	/**
+	 * Return the request attribute value if present.
+	 * @param name the attribute name
+	 * @return the attribute value
+	 */
+	default Optional<Object> attribute(String name) {
+		Map<String, Object> attributes = attributes();
+		if (attributes.containsKey(name)) {
+			return Optional.of(attributes.get(name));
+		}
+		else {
+			return Optional.empty();
+		}
+	}
+
+
+	/**
+	 * Return the attributes of this request.
+	 */
+	Map<String, Object> attributes();
+
+	/**
 	 * Writes this request to the given {@link ClientHttpRequest}.
 	 *
 	 * @param request the client http request to write to
@@ -90,6 +114,7 @@ public interface ClientRequest {
 		return new DefaultClientRequestBuilder(other.method(), other.url())
 				.headers(headers -> headers.addAll(other.headers()))
 				.cookies(cookies -> cookies.addAll(other.cookies()))
+				.attributes(attributes -> attributes.putAll(other.attributes()))
 				.body(other.body());
 	}
 
@@ -164,6 +189,34 @@ public interface ClientRequest {
 		 * @return the built request
 		 */
 		<S, P extends Publisher<S>> Builder body(P publisher, Class<S> elementClass);
+
+		/**
+		 * Set the body of the request to the given {@code Publisher} and return it.
+		 * @param publisher the {@code Publisher} to write to the request
+		 * @param typeReference a type reference describing the elements contained in the publisher
+		 * @param <S> the type of the elements contained in the publisher
+		 * @param <P> the type of the {@code Publisher}
+		 * @return the built request
+		 */
+		<S, P extends Publisher<S>> Builder body(P publisher,
+				ParameterizedTypeReference<S> typeReference);
+
+		/**
+		 * Set the attribute with the given name to the given value.
+		 * @param name the name of the attribute to add
+		 * @param value the value of the attribute to add
+		 * @return this builder
+		 */
+		Builder attribute(String name, Object value);
+
+		/**
+		 * Manipulate the request attributes with the given consumer. The attributes provided to
+		 * the consumer are "live", so that the consumer can be used to inspect attributes,
+		 * remove attributes, or use any of the other map-provided methods.
+		 * @param attributesConsumer a function that consumes the attributes
+		 * @return this builder
+		 */
+		Builder attributes(Consumer<Map<String, Object>> attributesConsumer);
 
 		/**
 		 * Builds the request entity with no body.

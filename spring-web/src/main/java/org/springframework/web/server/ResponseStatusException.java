@@ -34,6 +34,7 @@ public class ResponseStatusException extends NestedRuntimeException {
 
 	private final HttpStatus status;
 
+	@Nullable
 	private final String reason;
 
 
@@ -86,6 +87,7 @@ public class ResponseStatusException extends NestedRuntimeException {
 	}
 
 	@Override
+	@Nullable
 	public String getMessage() {
 		String msg = "Response status " + this.status + (this.reason != null ? " with reason \"" + reason + "\"" : "");
 		return NestedExceptionUtils.buildMessage(msg, getCause());

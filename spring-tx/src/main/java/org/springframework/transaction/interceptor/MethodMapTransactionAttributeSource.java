@@ -50,8 +50,10 @@ public class MethodMapTransactionAttributeSource
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	/** Map from method name to attribute value */
+	@Nullable
 	private Map<String, TransactionAttribute> methodMap;
 
+	@Nullable
 	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
 	private boolean eagerlyInitialized = false;
@@ -205,6 +207,7 @@ public class MethodMapTransactionAttributeSource
 
 
 	@Override
+	@Nullable
 	public TransactionAttribute getTransactionAttribute(Method method, @Nullable Class<?> targetClass) {
 		if (this.eagerlyInitialized) {
 			return this.transactionAttributeMap.get(method);

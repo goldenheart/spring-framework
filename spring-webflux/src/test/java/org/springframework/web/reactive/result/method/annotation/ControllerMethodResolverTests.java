@@ -17,7 +17,6 @@ package org.springframework.web.reactive.result.method.annotation;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
@@ -77,7 +76,7 @@ public class ControllerMethodResolverTests {
 		applicationContext.refresh();
 
 		this.methodResolver = new ControllerMethodResolver(
-				resolvers, codecs, new ReactiveAdapterRegistry(), applicationContext);
+				resolvers, codecs.getReaders(), new ReactiveAdapterRegistry(), applicationContext);
 
 		Method method = ResolvableMethod.on(TestController.class).mockCall(TestController::handle).method();
 		this.handlerMethod = new HandlerMethod(new TestController(), method);
@@ -110,6 +109,7 @@ public class ControllerMethodResolverTests {
 		assertEquals(ErrorsMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(ServerWebExchangeArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(PrincipalArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(SessionStatusMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(WebSessionArgumentResolver.class, next(resolvers, index).getClass());
 
 		assertEquals(CustomArgumentResolver.class, next(resolvers, index).getClass());
@@ -187,11 +187,11 @@ public class ControllerMethodResolverTests {
 	@Test
 	public void exceptionHandlerArgumentResolvers() throws Exception {
 
-		Optional<InvocableHandlerMethod> optional =
+		InvocableHandlerMethod invocable =
 				this.methodResolver.getExceptionHandlerMethod(
 						new ResponseStatusException(HttpStatus.BAD_REQUEST, "reason"), this.handlerMethod);
 
-		InvocableHandlerMethod invocable = optional.orElseThrow(() -> new AssertionError("No match"));
+		assertNotNull("No match", invocable);
 		assertEquals(TestController.class, invocable.getBeanType());
 		List<HandlerMethodArgumentResolver> resolvers = invocable.getResolvers();
 
@@ -221,11 +221,10 @@ public class ControllerMethodResolverTests {
 	@Test
 	public void exceptionHandlerFromControllerAdvice() throws Exception {
 
-		Optional<InvocableHandlerMethod> optional =
+		InvocableHandlerMethod invocable =
 				this.methodResolver.getExceptionHandlerMethod(
 						new IllegalStateException("reason"), this.handlerMethod);
 
-		InvocableHandlerMethod invocable = optional.orElseThrow(() -> new AssertionError("No match"));
 		assertNotNull(invocable);
 		assertEquals(TestControllerAdvice.class, invocable.getBeanType());
 	}
@@ -286,7 +285,7 @@ public class ControllerMethodResolverTests {
 			implements SyncHandlerMethodArgumentResolver {
 
 		@Override
-		public Optional<Object> resolveArgumentValue(MethodParameter p, BindingContext c, ServerWebExchange e) {
+		public Object resolveArgumentValue(MethodParameter p, BindingContext c, ServerWebExchange e) {
 			return null;
 		}
 	}

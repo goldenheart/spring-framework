@@ -53,6 +53,7 @@ import org.springframework.web.util.UrlPathHelper;
  */
 public final class RequestMappingInfo implements RequestCondition<RequestMappingInfo> {
 
+	@Nullable
 	private final String name;
 
 	private final PatternsRequestCondition patternsCondition;
@@ -209,6 +210,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	 * @return a new instance in case all conditions match; or {@code null} otherwise
 	 */
 	@Override
+	@Nullable
 	public RequestMappingInfo getMatchingCondition(HttpServletRequest request) {
 		RequestMethodsRequestCondition methods = this.methodsCondition.getMatchingCondition(request);
 		ParamsRequestCondition params = this.paramsCondition.getMatchingCondition(request);
@@ -418,8 +420,10 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 
 		private String[] produces = new String[0];
 
+		@Nullable
 		private String mappingName;
 
+		@Nullable
 		private RequestCondition<?> customCondition;
 
 		private BuilderConfiguration options = new BuilderConfiguration();
@@ -511,8 +515,10 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	 */
 	public static class BuilderConfiguration {
 
+		@Nullable
 		private UrlPathHelper urlPathHelper;
 
+		@Nullable
 		private PathMatcher pathMatcher;
 
 		private boolean trailingSlashMatch = true;
@@ -521,6 +527,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 
 		private boolean registeredSuffixPatternMatch = false;
 
+		@Nullable
 		private ContentNegotiationManager contentNegotiationManager;
 
 		/**
@@ -528,7 +535,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 		 * <p>By default this is not set.
 		 * @since 4.2.8
 		 */
-		public void setUrlPathHelper(UrlPathHelper urlPathHelper) {
+		public void setUrlPathHelper(@Nullable UrlPathHelper urlPathHelper) {
 			this.urlPathHelper = urlPathHelper;
 		}
 
@@ -544,7 +551,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 		 * Set a custom PathMatcher to use for the PatternsRequestCondition.
 		 * <p>By default this is not set.
 		 */
-		public void setPathMatcher(PathMatcher pathMatcher) {
+		public void setPathMatcher(@Nullable PathMatcher pathMatcher) {
 			this.pathMatcher = pathMatcher;
 		}
 
@@ -614,7 +621,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 		 */
 		@Nullable
 		public List<String> getFileExtensions() {
-			if (useRegisteredSuffixPatternMatch() && getContentNegotiationManager() != null) {
+			if (useRegisteredSuffixPatternMatch() && this.contentNegotiationManager != null) {
 				return this.contentNegotiationManager.getAllFileExtensions();
 			}
 			return null;

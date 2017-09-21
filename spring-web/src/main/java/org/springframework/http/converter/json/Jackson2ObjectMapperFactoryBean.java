@@ -46,6 +46,7 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.lang.Nullable;
 
 /**
  * A {@link FactoryBean} for creating a Jackson 2.x {@link ObjectMapper} (default) or
@@ -144,6 +145,7 @@ public class Jackson2ObjectMapperFactoryBean implements FactoryBean<ObjectMapper
 
 	private final Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
 
+	@Nullable
 	private ObjectMapper objectMapper;
 
 
@@ -464,6 +466,7 @@ public class Jackson2ObjectMapperFactoryBean implements FactoryBean<ObjectMapper
 	 * Return the singleton ObjectMapper.
 	 */
 	@Override
+	@Nullable
 	public ObjectMapper getObject() {
 		return this.objectMapper;
 	}

@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import reactor.core.publisher.Mono;
 
@@ -46,9 +46,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.i18n.LocaleContextResolver;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebSession;
+import org.springframework.web.server.i18n.LocaleContextResolver;
 import org.springframework.web.server.session.WebSessionManager;
 
 /**
@@ -91,6 +91,8 @@ public class DefaultServerWebExchange implements ServerWebExchange {
 	private final Mono<MultiValueMap<String, Part>> multipartDataMono;
 
 	private volatile boolean notModified;
+
+	private Function<String, String> urlTransformer = url -> url;
 
 
 	public DefaultServerWebExchange(ServerHttpRequest request, ServerHttpResponse response,
@@ -176,11 +178,6 @@ public class DefaultServerWebExchange implements ServerWebExchange {
 	@Override
 	public Map<String, Object> getAttributes() {
 		return this.attributes;
-	}
-
-	@Override @SuppressWarnings("unchecked")
-	public <T> Optional<T> getAttribute(String name) {
-		return Optional.ofNullable((T) this.attributes.get(name));
 	}
 
 	@Override
@@ -327,5 +324,17 @@ public class DefaultServerWebExchange implements ServerWebExchange {
 		this.notModified = ChronoUnit.SECONDS.between(lastModified, Instant.ofEpochMilli(ifModifiedSince)) >= 0;
 		return true;
 	}
+
+	@Override
+	public String transformUrl(String url) {
+		return this.urlTransformer.apply(url);
+	}
+
+	@Override
+	public void addUrlTransformer(Function<String, String> transformer) {
+		Assert.notNull(transformer, "'encoder' must not be null");
+		this.urlTransformer = this.urlTransformer.andThen(transformer);
+	}
+
 
 }

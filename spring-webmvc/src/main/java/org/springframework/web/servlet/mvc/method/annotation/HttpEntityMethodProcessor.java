@@ -122,6 +122,7 @@ public class HttpEntityMethodProcessor extends AbstractMessageConverterMethodPro
 	}
 
 	@Override
+	@Nullable
 	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory)
 			throws IOException, HttpMediaTypeNotSupportedException {
@@ -180,15 +181,15 @@ public class HttpEntityMethodProcessor extends AbstractMessageConverterMethodPro
 
 		HttpHeaders outputHeaders = outputMessage.getHeaders();
 		HttpHeaders entityHeaders = responseEntity.getHeaders();
-		if (outputHeaders.containsKey(HttpHeaders.VARY) && entityHeaders.containsKey(HttpHeaders.VARY)) {
-			List<String> values = getVaryRequestHeadersToAdd(outputHeaders, entityHeaders);
-			if (!values.isEmpty()) {
-				outputHeaders.setVary(values);
-			}
-		}
 		if (!entityHeaders.isEmpty()) {
 			entityHeaders.forEach((key, value) -> {
-				if (!outputHeaders.containsKey(key)) {
+				if (HttpHeaders.VARY.equals(key) && outputHeaders.containsKey(HttpHeaders.VARY)) {
+					List<String> values = getVaryRequestHeadersToAdd(outputHeaders, entityHeaders);
+					if (!values.isEmpty()) {
+						outputHeaders.setVary(values);
+					}
+				}
+				else {
 					outputHeaders.put(key, value);
 				}
 			});

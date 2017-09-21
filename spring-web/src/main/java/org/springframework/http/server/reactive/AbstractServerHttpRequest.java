@@ -16,13 +16,19 @@
 
 package org.springframework.http.server.reactive;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.net.URLDecoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.RequestPath;
+import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -36,6 +42,8 @@ import org.springframework.util.StringUtils;
  */
 public abstract class AbstractServerHttpRequest implements ServerHttpRequest {
 
+	private static final Log logger = LogFactory.getLog(ServerHttpRequest.class);
+
 	private static final Pattern QUERY_PATTERN = Pattern.compile("([^&=]+)(=?)([^&]+)?");
 
 
@@ -45,8 +53,10 @@ public abstract class AbstractServerHttpRequest implements ServerHttpRequest {
 
 	private final HttpHeaders headers;
 
+	@Nullable
 	private MultiValueMap<String, String> queryParams;
 
+	@Nullable
 	private MultiValueMap<String, HttpCookie> cookies;
 
 
@@ -56,9 +66,9 @@ public abstract class AbstractServerHttpRequest implements ServerHttpRequest {
 	 * @param contextPath the context path for the request
 	 * @param headers the headers for the request
 	 */
-	public AbstractServerHttpRequest(URI uri, String contextPath, HttpHeaders headers) {
+	public AbstractServerHttpRequest(URI uri, @Nullable String contextPath, HttpHeaders headers) {
 		this.uri = uri;
-		this.path = new DefaultRequestPath(uri, contextPath, StandardCharsets.UTF_8);
+		this.path = RequestPath.parse(uri, contextPath);
 		this.headers = HttpHeaders.readOnlyHttpHeaders(headers);
 	}
 
@@ -109,8 +119,18 @@ public abstract class AbstractServerHttpRequest implements ServerHttpRequest {
 		return queryParams;
 	}
 
+	@SuppressWarnings("deprecation")
 	private String decodeQueryParam(String value) {
-		return StringUtils.uriDecode(value, StandardCharsets.UTF_8);
+		try {
+			return URLDecoder.decode(value, "UTF-8");
+		}
+		catch (UnsupportedEncodingException ex) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Could not decode query param [" + value + "] as 'UTF-8'. " +
+						"Falling back on default encoding; exception message: " + ex.getMessage());
+			}
+			return URLDecoder.decode(value);
+		}
 	}
 
 	@Override

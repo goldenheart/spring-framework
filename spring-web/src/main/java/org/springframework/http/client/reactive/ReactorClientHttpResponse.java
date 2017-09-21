@@ -34,8 +34,8 @@ import org.springframework.util.MultiValueMap;
  * {@link ClientHttpResponse} implementation for the Reactor-Netty HTTP client.
  *
  * @author Brian Clozel
- * @see reactor.ipc.netty.http.client.HttpClient
  * @since 5.0
+ * @see reactor.ipc.netty.http.client.HttpClient
  */
 public class ReactorClientHttpResponse implements ClientHttpResponse {
 
@@ -89,6 +89,10 @@ public class ReactorClientHttpResponse implements ClientHttpResponse {
 		return CollectionUtils.unmodifiableMultiValueMap(result);
 	}
 
+	@Override
+	public void close() {
+		this.response.dispose();
+	}
 
 	@Override
 	public String toString() {

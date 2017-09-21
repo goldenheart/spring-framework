@@ -98,6 +98,7 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 	 * otherwise.
 	 */
 	@Override
+	@Nullable
 	public Object invoke(final MethodInvocation invocation) throws Throwable {
 		Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
 		Method specificMethod = ClassUtils.getMostSpecificMethod(invocation.getMethod(), targetClass);
@@ -137,6 +138,7 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 	 * @see #determineAsyncExecutor(Method)
 	 */
 	@Override
+	@Nullable
 	protected String getExecutorQualifier(Method method) {
 		return null;
 	}
@@ -150,7 +152,8 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 	 * @see #DEFAULT_TASK_EXECUTOR_BEAN_NAME
 	 */
 	@Override
-	protected Executor getDefaultExecutor(BeanFactory beanFactory) {
+	@Nullable
+	protected Executor getDefaultExecutor(@Nullable BeanFactory beanFactory) {
 		Executor defaultExecutor = super.getDefaultExecutor(beanFactory);
 		return (defaultExecutor != null ? defaultExecutor : new SimpleAsyncTaskExecutor());
 	}

@@ -1,5 +1,22 @@
+/*
+ * Copyright 2002-2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.web.client
 
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpMethod
 import org.springframework.http.RequestEntity
@@ -15,7 +32,7 @@ import java.net.URI
  * @since 5.0
  */
 @Throws(RestClientException::class)
-inline fun <reified T: Any> RestOperations.getForObject(url: String, vararg uriVariables: Any): T =
+inline fun <reified T: Any> RestOperations.getForObject(url: String, vararg uriVariables: Any): T? =
 		getForObject(url, T::class.java, *uriVariables)
 
 /**
@@ -26,7 +43,7 @@ inline fun <reified T: Any> RestOperations.getForObject(url: String, vararg uriV
  * @since 5.0
  */
 @Throws(RestClientException::class)
-inline fun <reified T: Any> RestOperations.getForObject(url: String, uriVariables: Map<String, Any?>): T =
+inline fun <reified T: Any> RestOperations.getForObject(url: String, uriVariables: Map<String, Any?>): T? =
 		getForObject(url, T::class.java, uriVariables)
 
 /**
@@ -37,7 +54,7 @@ inline fun <reified T: Any> RestOperations.getForObject(url: String, uriVariable
  * @since 5.0
  */
 @Throws(RestClientException::class)
-inline fun <reified T: Any> RestOperations.getForObject(url: URI): T =
+inline fun <reified T: Any> RestOperations.getForObject(url: URI): T? =
 		getForObject(url, T::class.java)
 
 /**
@@ -59,7 +76,7 @@ inline fun <reified T: Any> RestOperations.getForEntity(url: String, vararg uriV
  * @since 5.0
  */
 @Throws(RestClientException::class)
-inline fun <reified T: Any> RestOperations.postForObject(url: String, request: Any, vararg uriVariables: Any): T =
+inline fun <reified T: Any> RestOperations.postForObject(url: String, request: Any, vararg uriVariables: Any): T? =
 		postForObject(url, request, T::class.java, *uriVariables)
 
 /**
@@ -70,7 +87,7 @@ inline fun <reified T: Any> RestOperations.postForObject(url: String, request: A
  * @since 5.0
  */
 @Throws(RestClientException::class)
-inline fun <reified T: Any> RestOperations.postForObject(url: String, request: Any, uriVariables: Map<String, *>): T =
+inline fun <reified T: Any> RestOperations.postForObject(url: String, request: Any, uriVariables: Map<String, *>): T? =
 		postForObject(url, request, T::class.java, uriVariables)
 
 /**
@@ -81,7 +98,7 @@ inline fun <reified T: Any> RestOperations.postForObject(url: String, request: A
  * @since 5.0
  */
 @Throws(RestClientException::class)
-inline fun <reified T: Any> RestOperations.postForObject(url: URI, request: Any): T =
+inline fun <reified T: Any> RestOperations.postForObject(url: URI, request: Any): T? =
 		postForObject(url, request, T::class.java)
 
 /**
@@ -126,7 +143,7 @@ inline fun <reified T: Any> RestOperations.postForEntity(url: URI, request: Any)
  */
 @Throws(RestClientException::class)
 inline fun <reified T: Any> RestOperations.exchange(url: String, method: HttpMethod, requestEntity: HttpEntity<*>, vararg uriVariables: Any): ResponseEntity<T> =
-		exchange(url, method, requestEntity, T::class.java, *uriVariables)
+		exchange(url, method, requestEntity, object : ParameterizedTypeReference<T>() {}, *uriVariables)
 
 /**
  * Extension for [RestOperations.exchange] avoiding specifying the type parameter thanks to Kotlin reified type parameters.
@@ -137,7 +154,7 @@ inline fun <reified T: Any> RestOperations.exchange(url: String, method: HttpMet
  */
 @Throws(RestClientException::class)
 inline fun <reified T: Any> RestOperations.exchange(url: String, method: HttpMethod, requestEntity: HttpEntity<*>, uriVariables: Map<String, *>): ResponseEntity<T> =
-		exchange(url, method, requestEntity, T::class.java, uriVariables)
+		exchange(url, method, requestEntity, object : ParameterizedTypeReference<T>() {}, uriVariables)
 
 /**
  * Extension for [RestOperations.exchange] avoiding specifying the type parameter thanks to Kotlin reified type parameters.
@@ -148,7 +165,7 @@ inline fun <reified T: Any> RestOperations.exchange(url: String, method: HttpMet
  */
 @Throws(RestClientException::class)
 inline fun <reified T: Any> RestOperations.exchange(url: URI, method: HttpMethod, requestEntity: HttpEntity<*>): ResponseEntity<T> =
-		exchange(url, method, requestEntity, T::class.java)
+		exchange(url, method, requestEntity, object : ParameterizedTypeReference<T>() {})
 
 /**
  * Extension for [RestOperations.exchange] avoiding specifying the type parameter thanks to Kotlin reified type parameters.
@@ -159,4 +176,4 @@ inline fun <reified T: Any> RestOperations.exchange(url: URI, method: HttpMethod
  */
 @Throws(RestClientException::class)
 inline fun <reified T: Any> RestOperations.exchange(requestEntity: RequestEntity<*>): ResponseEntity<T> =
-		exchange(requestEntity, T::class.java)
+		exchange(requestEntity, object : ParameterizedTypeReference<T>() {})

@@ -120,6 +120,7 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 
 
 	@Override
+	@Nullable
 	public UserDestinationResult resolveDestination(Message<?> message) {
 		ParseResult parseResult = parse(message);
 		if (parseResult == null) {
@@ -207,7 +208,7 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 		Set<String> sessionIds;
 		SimpUser user = this.userRegistry.getUser(userName);
 		if (user != null) {
-			if (user.getSession(sessionId) != null) {
+			if (sessionId != null && user.getSession(sessionId) != null) {
 				sessionIds = Collections.singleton(sessionId);
 			}
 			else {
@@ -264,6 +265,7 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 
 		private final Set<String> sessionIds;
 
+		@Nullable
 		private final String user;
 
 		public ParseResult(String sourceDest, String actualDest, String subscribeDest,

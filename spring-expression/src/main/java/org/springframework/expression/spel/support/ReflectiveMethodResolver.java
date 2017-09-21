@@ -57,6 +57,7 @@ public class ReflectiveMethodResolver implements MethodResolver {
 	// more closely following the Java rules.
 	private final boolean useDistance;
 
+	@Nullable
 	private Map<Class<?>, MethodFilter> filters;
 
 
@@ -102,6 +103,7 @@ public class ReflectiveMethodResolver implements MethodResolver {
 	 * </ol>
 	 */
 	@Override
+	@Nullable
 	public MethodExecutor resolve(EvaluationContext context, Object targetObject, String name,
 			List<TypeDescriptor> argumentTypes) throws AccessException {
 
